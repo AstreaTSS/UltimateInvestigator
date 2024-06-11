@@ -193,7 +193,7 @@ bot.slash_perms_cache = defaultdict(dict)
 bot.mini_commands_per_scope = {}
 bot.background_tasks = set()
 bot.msg_enabled_bullets_guilds = set()
-bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # #D92C43 or 14232643
+bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # #723fb0 or 7487408
 prefixed.setup(bot)
 
 
