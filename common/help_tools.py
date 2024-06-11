@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -376,7 +376,7 @@ class GuildApplicationCommandPermissionData(typing.TypedDict):
     permissions: list[discord_typings.ApplicationCommandPermissionsData]
 
 
-async def process_bulk_slash_perms(bot: utils.UIBase, guild_id: int) -> None:
+async def process_bulk_slash_perms(bot: utils.THIABase, guild_id: int) -> None:
     perms: list[GuildApplicationCommandPermissionData] = (
         await bot.http.batch_get_application_command_permissions(  # type: ignore
             int(bot.app.id), guild_id
@@ -513,7 +513,7 @@ class MiniCommand:
         self.subcommands.add(cmd)
 
 
-def get_commands_for_scope_by_ids(bot: utils.UIBase, guild_id: int) -> dict:
+def get_commands_for_scope_by_ids(bot: utils.THIABase, guild_id: int) -> dict:
     scope_cmds = bot.interactions_by_scope.get(
         ipy.const.GLOBAL_SCOPE, {}
     ) | bot.interactions_by_scope.get(guild_id, {})
@@ -525,7 +525,7 @@ def get_commands_for_scope_by_ids(bot: utils.UIBase, guild_id: int) -> dict:
 
 
 def get_mini_commands_for_scope(
-    bot: utils.UIBase, guild_id: int
+    bot: utils.THIABase, guild_id: int
 ) -> dict[str, MiniCommand]:
     if (
         mini_cmds := bot.mini_commands_per_scope.get(guild_id, ipy.MISSING)

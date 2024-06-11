@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,8 +47,8 @@ class VoteHandler:
 class Voting(ipy.Extension):
     session: aiohttp.ClientSession
 
-    def __init__(self, bot: utils.UIBase) -> None:
-        self.bot: utils.UIBase = bot
+    def __init__(self, bot: utils.THIABase) -> None:
+        self.bot: utils.THIABase = bot
         self.name = "Voting"
 
         self.shard_count = 1
@@ -120,7 +120,7 @@ class Voting(ipy.Extension):
         name="vote",
         description="Vote for the bot.",
     )
-    async def vote(self, ctx: utils.UIInteractionContext) -> None:
+    async def vote(self, ctx: utils.THIAInteractionContext) -> None:
         website_votes: list[str] = [
             f"**{handler.name}** - {handler.vote_url.format(bot_id=self.bot.user.id)}"
             for handler in self.handlers
@@ -136,6 +136,6 @@ class Voting(ipy.Extension):
         )
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     Voting(bot)

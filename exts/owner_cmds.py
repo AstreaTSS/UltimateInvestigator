@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,8 +25,8 @@ import common.utils as utils
 
 
 class OwnerCMDs(ipy.Extension):
-    def __init__(self, bot: utils.UIBase) -> None:
-        self.bot: utils.UIBase = bot
+    def __init__(self, bot: utils.THIABase) -> None:
+        self.bot: utils.THIABase = bot
         self.name = "Owner"
 
         self.set_extension_error(self.ext_error)
@@ -297,6 +297,6 @@ class OwnerCMDs(ipy.Extension):
             await ctx.send("An error occured. Please check your DMs.")
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     OwnerCMDs(bot)

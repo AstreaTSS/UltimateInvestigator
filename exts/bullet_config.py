@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,9 +21,9 @@ import common.utils as utils
 class BulletConfigCMDs(utils.Extension):
     """Commands for using and modifying Truth Bullet server settings."""
 
-    def __init__(self, bot: utils.UIBase) -> None:
+    def __init__(self, bot: utils.THIABase) -> None:
         self.name = "Bullet Config"
-        self.bot: utils.UIBase = bot
+        self.bot: utils.THIABase = bot
 
     config = tansy.SlashCommand(
         name="config",
@@ -38,7 +38,7 @@ class BulletConfigCMDs(utils.Extension):
             "Lists out the Truth Bullet configuration settings for the server."
         ),
     )
-    async def bullet_config(self, ctx: utils.UIInteractionContext) -> None:
+    async def bullet_config(self, ctx: utils.THIAInteractionContext) -> None:
         config = await ctx.fetch_config()
 
         str_builder = [
@@ -98,7 +98,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def set_bullet_channel(
         self,
-        ctx: utils.UIInteractionContext,
+        ctx: utils.THIAInteractionContext,
         channel: typing.Optional[ipy.GuildText] = tansy.Option(
             "The channel to send Truth Bullets to.", default=None
         ),
@@ -134,7 +134,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def set_best_truth_bullet_finder_role(
         self,
-        ctx: utils.UIInteractionContext,
+        ctx: utils.THIAInteractionContext,
         role: typing.Optional[ipy.Role] = tansy.Option(
             "The Best Detective role to use.",
             converter=utils.ValidRoleConverter,
@@ -170,7 +170,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def set_player_role(
         self,
-        ctx: utils.UIInteractionContext,
+        ctx: utils.THIAInteractionContext,
         role: typing.Optional[ipy.Role] = tansy.Option(
             "The Player role to use.",
             default=None,
@@ -209,7 +209,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def set_investigation_mode(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         mode: int = tansy.Option(
             "The investigation mode to set.",
             choices=[
@@ -248,7 +248,7 @@ class BulletConfigCMDs(utils.Extension):
     @ipy.auto_defer(enabled=False)
     async def edit_names(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         to_change: str = tansy.Option(
             "The names to change.",
             choices=[
@@ -311,7 +311,7 @@ class BulletConfigCMDs(utils.Extension):
         await ctx.send_modal(modal)
 
     @ipy.modal_callback("bullet_names")
-    async def bullet_names_edit(self, ctx: utils.UIModalContext) -> None:
+    async def bullet_names_edit(self, ctx: utils.THIAModalContext) -> None:
         config = await ctx.fetch_config()
         names = config.names
 
@@ -328,7 +328,7 @@ class BulletConfigCMDs(utils.Extension):
         )
 
     @ipy.modal_callback("bullet_finders")
-    async def bullet_finders_edit(self, ctx: utils.UIModalContext) -> None:
+    async def bullet_finders_edit(self, ctx: utils.THIAModalContext) -> None:
         config = await ctx.fetch_config()
         names = config.names
 
@@ -386,7 +386,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def toggle_bullets(
         self,
-        ctx: utils.UIInteractionContext,
+        ctx: utils.THIAInteractionContext,
         toggle: bool = tansy.Option(
             "Should the Truth Bullets be on (true) or off (false)?"
         ),
@@ -419,7 +419,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def setup_help(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
     ) -> None:
         embed = utils.make_embed(
             "To set up this bot, follow the Server Setup Guide below.",
@@ -428,11 +428,11 @@ class BulletConfigCMDs(utils.Extension):
         button = ipy.Button(
             style=ipy.ButtonStyle.LINK,
             label="Server Setup Guide",
-            url="https://ui.astrea.cc/server_setup.html",
+            url="https://pythia.astrea.cc/server_setup.html",
         )
         await ctx.send(embeds=embed, components=button)
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     BulletConfigCMDs(bot)

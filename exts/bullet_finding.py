@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,8 +22,8 @@ import common.utils as utils
 class BulletFinding(utils.Extension):
     """The cog that deals with finding Truth Bullets."""
 
-    def __init__(self, bot: utils.UIBase) -> None:
-        self.bot: utils.UIBase = bot
+    def __init__(self, bot: utils.THIABase) -> None:
+        self.bot: utils.THIABase = bot
 
     async def check_for_finish(
         self,
@@ -209,7 +209,7 @@ class BulletFinding(utils.Extension):
     @ipy.auto_defer(enabled=False)
     async def investigate(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         trigger: str = tansy.Option("The trigger to search for in this channel."),
     ) -> None:
         config = await ctx.fetch_config()
@@ -263,6 +263,6 @@ class BulletFinding(utils.Extension):
         await self.check_for_finish(ctx.guild, bullet_chan, config)
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     BulletFinding(bot)

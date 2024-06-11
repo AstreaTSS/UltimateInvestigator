@@ -20,7 +20,7 @@ model PrismaNames {
 
   config PrismaConfig?
 
-  @@map("uinames")
+  @@map("thianames")
 }
 
 model PrismaConfig {
@@ -33,7 +33,7 @@ model PrismaConfig {
   names                   PrismaNames? @relation(fields: [names_id], references: [id], onDelete: Cascade)
   names_id                Int?         @unique
 
-  @@map("uinewconfig")
+  @@map("thianewconfig")
 }
 
 model PrismaTruthBullet {
@@ -48,5 +48,5 @@ model PrismaTruthBullet {
   hidden      Boolean  @default(false)
 
   @@index([trigger, channel_id, guild_id, found], map: "idx_uinewtruthb_name_37580d")
-  @@map("uinewtruthbullets")
+  @@map("thianewtruthbullets")
 }

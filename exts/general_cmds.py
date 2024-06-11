@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,9 +26,9 @@ PYTHON_IMPLEMENTATION = platform.python_implementation()
 
 
 class OtherCMDs(utils.Extension):
-    def __init__(self, bot: utils.UIBase) -> None:
+    def __init__(self, bot: utils.THIABase) -> None:
         self.name = "General"
-        self.bot: utils.UIBase = bot
+        self.bot: utils.THIABase = bot
         self.invite_link = ""
 
         self.bot.create_task(self.when_ready())
@@ -57,7 +57,7 @@ class OtherCMDs(utils.Extension):
             " but has no real use."
         ),
     )
-    async def ping(self, ctx: utils.UIInteractionContext) -> None:
+    async def ping(self, ctx: utils.THIAInteractionContext) -> None:
         start_time = time.perf_counter()
         average_ping = round((self.bot.latency * 1000), 2)
 
@@ -81,7 +81,7 @@ class OtherCMDs(utils.Extension):
         name="invite",
         description="Sends instructions on how to set up and invite the bot.",
     )
-    async def invite(self, ctx: utils.UISlashContext) -> None:
+    async def invite(self, ctx: utils.THIASlashContext) -> None:
         embed = utils.make_embed(
             "If you want to invite me to your server, it's a good idea to use the"
             " Server Setup Guide. However, if you know what you're doing, you can"
@@ -92,7 +92,7 @@ class OtherCMDs(utils.Extension):
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
                 label="Server Setup Guide",
-                url="https://ui.astrea.cc/server_setup.html",
+                url="https://pythia.astrea.cc/server_setup.html",
             ),
             ipy.Button(
                 style=ipy.ButtonStyle.URL,
@@ -105,7 +105,7 @@ class OtherCMDs(utils.Extension):
     @ipy.slash_command(
         "support", description="Gives an invite link to the support server."
     )
-    async def support(self, ctx: utils.UISlashContext) -> None:
+    async def support(self, ctx: utils.THIASlashContext) -> None:
         embed = utils.make_embed(
             "If you need help with the bot, or just want to hang out, join the"
             " support server!",
@@ -122,14 +122,22 @@ class OtherCMDs(utils.Extension):
     async def about(self, ctx: ipy.InteractionContext) -> None:
         msg_list = [
             (
-                "Hi! I'm the Ultimate Investigator, a bot meant to help out with"
-                " investigations with Danganronpa/Killing Game RPs. I automate the"
-                " parts of investigating that take up time and energy of hosts to make"
-                " it easier for them to host an RP."
+                '> "Hello. I am PYTHIA, the Ultimate Robotic Assistant. I look forward'
+                ' to assisting you in whatever tasks you may have."'
             ),
             (
-                'More specifcally, I can handle anything related to "Truth Bullets" (or'
-                " your game's equivalent), managing and sending them out as needed."
+                (
+                    "PYTHIA is a Discord bot meant to assist with Danganronpa/Killing"
+                    " Game RPs. Currently, it automates parts of investigating that"
+                    " would otherwise take time and energy to make it easier to run"
+                    " RPs. More specifically, it allows for staff to define 'key"
+                    " phrases'/triggers that players can later activate through the"
+                    " bot."
+                ),
+                (
+                    "The bot is planned to increase in scope, adding featues like a"
+                    " gacha system in the future."
+                ),
             ),
         ]
 
@@ -161,7 +169,7 @@ class OtherCMDs(utils.Extension):
                     ),
                     (
                         "Commit Hash:"
-                        f" [{commit_hash}](https://github.com/AstreaTSS/UltimateInvestigator/commit/{commit_hash})"
+                        f" [{commit_hash}](https://github.com/AstreaTSS/PYTHIA/commit/{commit_hash})"
                         if commit_hash
                         else "Commit Hash: N/A"
                     ),
@@ -180,7 +188,7 @@ class OtherCMDs(utils.Extension):
         )
 
         links = [
-            "Website: [Link](https://ui.astrea.cc)",
+            "Website: [Link](https://pythia.astrea.cc)",
             f"Invite Bot: [Link]({self.invite_link})",
             "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
         ]
@@ -190,14 +198,11 @@ class OtherCMDs(utils.Extension):
 
         links.extend(
             (
-                (
-                    "Source Code:"
-                    " [Link](https://github.com/AstreaTSS/UltimateInvestigator)"
-                ),
-                "Terms of Service: [Link](https://ui.astrea.cc/legal/tos.html)",
+                "Source Code: [Link](https://github.com/AstreaTSS/PYTHIA)",
+                "Terms of Service: [Link](https://pythia.astrea.cc/legal/tos.html)",
                 (
                     "Privacy Policy:"
-                    " [Link](https://ui.astrea.cc/legal/privacy_policy.html)"
+                    " [Link](https://pythia.astrea.cc/legal/privacy_policy.html)"
                 ),
             )
         )
@@ -212,6 +217,6 @@ class OtherCMDs(utils.Extension):
         await ctx.send(embed=about_embed)
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     OtherCMDs(bot)

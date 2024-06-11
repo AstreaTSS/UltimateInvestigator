@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@ import common.utils as utils
 
 
 class EtcEvents(ipy.Extension):
-    def __init__(self, bot: utils.UIBase) -> None:
-        self.bot: utils.UIBase = bot
+    def __init__(self, bot: utils.THIABase) -> None:
+        self.bot: utils.THIABase = bot
 
     @ipy.listen("guild_join")
     async def on_guild_join(self, event: ipy.events.GuildJoin) -> None:
@@ -36,6 +36,6 @@ class EtcEvents(ipy.Extension):
         await models.Config.prisma().delete(where={"guild_id": int(event.guild_id)})
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     EtcEvents(bot)

@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -101,7 +101,7 @@ async def error_handle(
 
 
 async def msg_to_owner(
-    bot: "UIBase",
+    bot: "THIABase",
     chunks: list[str] | list[ipy.Embed] | list[str | ipy.Embed] | str | ipy.Embed,
 ) -> None:
     if not isinstance(chunks, list):
@@ -255,7 +255,7 @@ if typing.TYPE_CHECKING:
 
     from .help_tools import MiniCommand, PermissionsResolver
 
-    class UIBase(PrefixedInjectedClient):
+    class THIABase(PrefixedInjectedClient):
         db: Prisma
         owner: ipy.User
         color: ipy.Color
@@ -270,11 +270,11 @@ if typing.TYPE_CHECKING:
 
 else:
 
-    class UIBase(ipy.Client):
+    class THIABase(ipy.Client):
         pass
 
 
-class UIContextMixin:
+class THIAContextMixin:
     guild_config: typing.Optional[models.Config]
     guild_id: ipy.Snowflake
 
@@ -287,7 +287,7 @@ class UIContextMixin:
         return self.client.cache.get_guild(self.guild_id)  # type: ignore
 
     @property
-    def bot(self) -> "UIBase":
+    def bot(self) -> "THIABase":
         """A reference to the bot instance."""
         return self.client  # type: ignore
 
@@ -318,17 +318,17 @@ class UIContextMixin:
         return config
 
 
-class UIBaseContext(UIContextMixin, ipy.BaseContext):
+class THIABaseContext(THIAContextMixin, ipy.BaseContext):
     pass
 
 
-class UIModalContext(UIContextMixin, ipy.ModalContext):
+class THIAModalContext(THIAContextMixin, ipy.ModalContext):
     pass
 
 
-class UIInteractionContext(UIContextMixin, ipy.InteractionContext):
+class THIAInteractionContext(THIAContextMixin, ipy.InteractionContext):
     pass
 
 
-class UISlashContext(UIContextMixin, ipy.SlashContext):
+class THIASlashContext(THIAContextMixin, ipy.SlashContext):
     pass

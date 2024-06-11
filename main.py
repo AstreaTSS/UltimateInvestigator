@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ import common.utils as utils
 if typing.TYPE_CHECKING:
     import discord_typings
 
-logger = logging.getLogger("uibot")
+logger = logging.getLogger("pythiabot")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
@@ -49,7 +49,7 @@ def default_sentry_filter(
 ) -> typing.Optional[dict[str, typing.Any]]:
     if "log_record" in hint:
         record: logging.LogRecord = hint["log_record"]
-        if "interactions" in record.name or "uibot" in record.name:
+        if "interactions" in record.name or "pythiabot" in record.name:
             # there are some logging messages that are not worth sending to sentry
             if ": 403" in record.message:
                 return None
@@ -88,7 +88,7 @@ if utils.SENTRY_ENABLED:
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
-class UltimateInvestigator(utils.UIBase):
+class PYTHIA(utils.THIABase):
     @ipy.listen("ready")
     async def on_ready(self) -> None:
         utcnow = ipy.Timestamp.utcnow()
@@ -172,7 +172,7 @@ intents = ipy.Intents.new(
 )
 mentions = ipy.AllowedMentions.all()
 
-bot = UltimateInvestigator(
+bot = PYTHIA(
     activity=ipy.Activity(
         name="Status", type=ipy.ActivityType.CUSTOM, state="Loading..."
     ),
@@ -182,9 +182,9 @@ bot = UltimateInvestigator(
     disable_dm_commands=True,
     allowed_mentions=mentions,
     intents=intents,
-    interaction_context=utils.UIInteractionContext,
-    slash_context=utils.UISlashContext,
-    modal_context=utils.UIModalContext,
+    interaction_context=utils.THIAInteractionContext,
+    slash_context=utils.THIASlashContext,
+    modal_context=utils.THIAModalContext,
     auto_defer=ipy.AutoDefer(enabled=True, time_until_defer=0),
     logger=logger,
 )

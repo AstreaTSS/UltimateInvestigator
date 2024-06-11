@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,9 +21,9 @@ import common.utils as utils
 class HelpCMD(utils.Extension):
     """The cog that handles the help command."""
 
-    def __init__(self, bot: utils.UIBase) -> None:
+    def __init__(self, bot: utils.THIABase) -> None:
         self.name = "Help Category"
-        self.bot: utils.UIBase = bot
+        self.bot: utils.THIABase = bot
 
     async def _check_wrapper(
         self, ctx: ipy.BaseContext, check: typing.Callable
@@ -95,7 +95,7 @@ class HelpCMD(utils.Extension):
 
     async def get_multi_command_embeds(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         commands: list[help_tools.MiniCommand],
         name: str,
         description: typing.Optional[str],
@@ -128,7 +128,7 @@ class HelpCMD(utils.Extension):
 
     async def get_ext_cmd_embeds(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         cmds: dict[str, help_tools.MiniCommand],
         ext: ipy.Extension,
     ) -> list[ipy.Embed]:
@@ -149,9 +149,9 @@ class HelpCMD(utils.Extension):
 
     async def get_all_cmd_embeds(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         cmds: dict[str, help_tools.MiniCommand],
-        bot: utils.UIBase,
+        bot: utils.THIABase,
     ) -> list[ipy.Embed]:
         embeds: list[ipy.Embed] = []
 
@@ -163,7 +163,7 @@ class HelpCMD(utils.Extension):
         return embeds
 
     async def get_command_embeds(
-        self, ctx: utils.UISlashContext, command: help_tools.MiniCommand
+        self, ctx: utils.THIASlashContext, command: help_tools.MiniCommand
     ) -> list[ipy.Embed]:
         if command.subcommands:
             return await self.get_multi_command_embeds(
@@ -186,7 +186,7 @@ class HelpCMD(utils.Extension):
     )
     async def help_cmd(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         query: typing.Optional[str] = tansy.Option(
             "The command to search for.",
             autocomplete=True,
@@ -234,7 +234,7 @@ class HelpCMD(utils.Extension):
         await ctx.send([{"name": c, "value": c} for c in commands])
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     importlib.reload(help_tools)
     HelpCMD(bot)
