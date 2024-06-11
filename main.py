@@ -105,18 +105,18 @@ class PYTHIA(utils.THIABase):
         self.init_load = False
 
         activity = ipy.Activity(
-            name="Splash Text",
+            name="Status",
             type=ipy.ActivityType.CUSTOM,
-            state="Watching for Truth Bullets!",
+            state="Ultimate Investigator is now PYTHIA! Check bio for info",
         )
         await self.change_presence(activity=activity)
 
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
         activity = ipy.Activity(
-            name="Splash Text",
+            name="Status",
             type=ipy.ActivityType.CUSTOM,
-            state="Watching for Truth Bullets!",
+            state="Ultimate Investigator is now PYTHIA! Check bio for info",
         )
         await self.change_presence(activity=activity)
 
