@@ -39,9 +39,18 @@ class BulletCMDs(utils.Extension):
         self.name = "Bullet"
         self.bot: utils.THIABase = bot
 
-    @utils.manage_guild_slash_cmd(
-        name="add-bullets",
-        description="Open a prompt to add Truth Bullets to a specified channel.",
+    config = tansy.SlashCommand(
+        name="bullet-management",
+        description="Handles management of Truth Bullets.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+
+    @config.subcommand(
+        sub_cmd_name="add",
+        sub_cmd_description=(
+            "Open a prompt to add Truth Bullets to a specified channel."
+        ),
     )
     async def add_bullets(
         self,
@@ -170,9 +179,9 @@ class BulletCMDs(utils.Extension):
                 ),
             )
 
-    @utils.manage_guild_slash_cmd(
-        "remove-bullet",
-        description="Removes a Truth Bullet from the list of Truth Bullets.",
+    @config.subcommand(
+        "remove",
+        sub_cmd_description="Removes a Truth Bullet from the list of Truth Bullets.",
     )
     async def remove_bullet(
         self,
@@ -206,9 +215,9 @@ class BulletCMDs(utils.Extension):
                 f"Truth Bullet with trigger `{trigger}` does not exists!"
             )
 
-    @utils.manage_guild_slash_cmd(
-        "clear-bullets",
-        description=(
+    @config.subcommand(
+        "clear",
+        sub_cmd_description=(
             "Removes all Truth Bullets from the list of Truth Bullets. This action is"
             " irreversible."
         ),
@@ -229,8 +238,9 @@ class BulletCMDs(utils.Extension):
                 "There's no Truth Bullets to delete for this server!"
             )
 
-    @utils.manage_guild_slash_cmd(
-        "list-bullets", "Lists all Truth Bullets in the server this is run in."
+    @config.subcommand(
+        "list",
+        sub_cmd_description="Lists all Truth Bullets in the server this is run in.",
     )
     async def list_bullets(self, ctx: utils.THIASlashContext) -> None:
         guild_bullets = await models.TruthBullet.prisma().find_many(
@@ -272,8 +282,8 @@ class BulletCMDs(utils.Extension):
         pag.default_color = ctx.bot.color
         await pag.send(ctx)
 
-    @utils.manage_guild_slash_cmd(
-        "bullet-info", "Lists all information about a Truth Bullet."
+    @config.subcommand(
+        "info", sub_cmd_description="Lists all information about a Truth Bullet."
     )
     async def bullet_info(
         self,
@@ -304,8 +314,8 @@ class BulletCMDs(utils.Extension):
 
         await ctx.send(embeds=embed, allowed_mentions=utils.deny_mentions(ctx.author))
 
-    @utils.manage_guild_slash_cmd(
-        "edit-bullet", "Sends a prompt to edit a Truth Bullet."
+    @config.subcommand(
+        "edit", sub_cmd_description="Sends a prompt to edit a Truth Bullet."
     )
     @ipy.auto_defer(enabled=False)
     async def edit_bullet(
@@ -409,7 +419,7 @@ class BulletCMDs(utils.Extension):
                     )
                 )
 
-    @utils.manage_guild_slash_cmd("unfind-bullet", "Un-finds a Truth Bullet.")
+    @config.subcommand("unfind", sub_cmd_description="Un-finds a Truth Bullet.")
     async def unfind_bullet(
         self,
         ctx: utils.THIASlashContext,
@@ -439,9 +449,11 @@ class BulletCMDs(utils.Extension):
 
         await ctx.send(embed=utils.make_embed("Truth Bullet un-found!"))
 
-    @utils.manage_guild_slash_cmd(
-        "override-bullet",
-        "Overrides who found a Truth Bullet with the person specified.",
+    @config.subcommand(
+        "override",
+        sub_cmd_description=(
+            "Overrides who found a Truth Bullet with the person specified."
+        ),
     )
     async def override_bullet(
         self,
@@ -468,8 +480,8 @@ class BulletCMDs(utils.Extension):
 
         await ctx.send(embed=utils.make_embed("Truth Bullet overrided and found!"))
 
-    @utils.manage_guild_slash_cmd(
-        "add-alias", "Adds an alias to the Truth Bullet specified."
+    @config.subcommand(
+        "add-alias", sub_cmd_description="Adds an alias to the Truth Bullet specified."
     )
     async def add_alias(
         self,
@@ -535,8 +547,9 @@ class BulletCMDs(utils.Extension):
             )
         )
 
-    @utils.manage_guild_slash_cmd(
-        "remove-alias", "Removes an alias from the Truth Bullet specified."
+    @config.subcommand(
+        "remove-alias",
+        sub_cmd_description="Removes an alias from the Truth Bullet specified.",
     )
     async def remove_alias(
         self,

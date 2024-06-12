@@ -19,15 +19,15 @@ import common.utils as utils
 
 
 class BulletConfigCMDs(utils.Extension):
-    """Commands for using and modifying Truth Bullet server settings."""
+    """Commands for using and modifying investigation server settings."""
 
     def __init__(self, bot: utils.THIABase) -> None:
-        self.name = "Bullet Config"
+        self.name = "Investigation Config"
         self.bot: utils.THIABase = bot
 
     config = tansy.SlashCommand(
-        name="config",
-        description="Handles configuration of the bot.",  # type: ignore
+        name="bullet-config",
+        description="Handles configuration of investigations.",  # type: ignore
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
@@ -35,7 +35,7 @@ class BulletConfigCMDs(utils.Extension):
     @config.subcommand(
         sub_cmd_name="info",
         sub_cmd_description=(
-            "Lists out the Truth Bullet configuration settings for the server."
+            "Lists out the investigation configuration settings for the server."
         ),
     )
     async def bullet_config(self, ctx: utils.THIASlashContext) -> None:
@@ -50,11 +50,11 @@ class BulletConfigCMDs(utils.Extension):
                 f" {f'<@&{config.player_role}>' if config.player_role else 'N/A'}"
             ),
             (
-                "Truth Bullets:"
+                "Investigation status:"
                 f" {utils.toggle_friendly_str(config.bullets.bullets_enabled)}"
             ),
             (
-                "Truth Bullet channel:"
+                "Investigation channel:"
                 f" {f'<#{config.bullets.bullet_chan_id}>' if config.bullets.bullet_chan_id else 'N/A'}"
             ),
             (
@@ -93,7 +93,7 @@ class BulletConfigCMDs(utils.Extension):
         await ctx.send(embed=embed)
 
     @config.subcommand(
-        sub_cmd_name="bullet-channel",
+        sub_cmd_name="investigation-channel",
         sub_cmd_description="Sets (or unsets) where all Truth Bullets are sent to.",
     )
     async def set_bullet_channel(
@@ -121,11 +121,11 @@ class BulletConfigCMDs(utils.Extension):
         if channel:
             await ctx.send(
                 embed=utils.make_embed(
-                    f"Truth Bullet channel set to {channel.mention}!"
+                    f"Investigation channel set to {channel.mention}!"
                 )
             )
         else:
-            await ctx.send(embed=utils.make_embed("Truth Bullet channel unset."))
+            await ctx.send(embed=utils.make_embed("Investigation channel unset."))
 
     @config.subcommand(
         sub_cmd_name="best-truth-bullet-finder",
@@ -160,37 +160,6 @@ class BulletConfigCMDs(utils.Extension):
             await ctx.send(
                 embed=utils.make_embed("Best Truth Bullet Finder role unset.")
             )
-
-    @config.subcommand(
-        sub_cmd_name="player",
-        sub_cmd_description=(
-            "Sets (or unsets) the Player role, the role that can find Truth Bullets."
-        ),
-    )
-    async def set_player_role(
-        self,
-        ctx: utils.THIASlashContext,
-        role: typing.Optional[ipy.Role] = tansy.Option(
-            "The Player role to use.",
-            default=None,
-        ),
-        unset: bool = tansy.Option("Should the role be unset?", default=False),
-    ) -> None:
-        if not (bool(role) ^ unset):
-            raise ipy.errors.BadArgument(
-                "You must either specify a role or specify to unset the role."
-            )
-
-        guild_config = await ctx.fetch_config()
-        guild_config.player_role = role.id if role else None
-        await guild_config.save()
-
-        if role:
-            await ctx.send(
-                embed=utils.make_embed(f"Player role set to {role.mention}!"),
-            )
-        else:
-            await ctx.send(embed=utils.make_embed("Player role unset."))
 
     @config.subcommand(
         sub_cmd_name="investigation-mode",
@@ -232,7 +201,9 @@ class BulletConfigCMDs(utils.Extension):
 
     @config.subcommand(
         sub_cmd_name="names",
-        sub_cmd_description="Edit the names used for various parts of the bot.",
+        sub_cmd_description=(
+            "Edit the displayed names used for various parts of investigations."
+        ),
     )
     @ipy.auto_defer(enabled=False)
     async def edit_names(
@@ -382,18 +353,18 @@ class BulletConfigCMDs(utils.Extension):
             )
         elif not config.bullets or not config.bullets.bullet_chan_id:
             raise utils.CustomCheckFailure(
-                "You still need to set a Truth Bullets channel!"
+                "You still need to set an investigation channel!"
             )
 
     @config.subcommand(
         sub_cmd_name="toggle",
-        sub_cmd_description="Turns on or off the Truth Bullets.",
+        sub_cmd_description="Enables or disables the investigation.",
     )
     async def toggle_bullets(
         self,
         ctx: utils.THIASlashContext,
         toggle: bool = tansy.Option(
-            "Should the Truth Bullets be on (true) or off (false)?"
+            "Should the investigation be turbed on (true) or off (false)?"
         ),
     ) -> None:
         config = await ctx.fetch_config({"bullets": True})
@@ -416,29 +387,10 @@ class BulletConfigCMDs(utils.Extension):
 
         await ctx.send(
             embed=utils.make_embed(
-                "Truth Bullets turned"
+                "Investigation turned"
                 f" {utils.toggle_friendly_str(config.bullets.bullets_enabled)}!"
             )
         )
-
-    @config.subcommand(
-        sub_cmd_name="help",
-        sub_cmd_description="Tells you how to set up this bot.",
-    )
-    async def setup_help(
-        self,
-        ctx: utils.THIASlashContext,
-    ) -> None:
-        embed = utils.make_embed(
-            "To set up this bot, follow the Server Setup Guide below.",
-            title="Setup Bot",
-        )
-        button = ipy.Button(
-            style=ipy.ButtonStyle.LINK,
-            label="Server Setup Guide",
-            url="https://pythia.astrea.cc/server_setup.html",
-        )
-        await ctx.send(embeds=embed, components=button)
 
 
 def setup(bot: utils.THIABase) -> None:
