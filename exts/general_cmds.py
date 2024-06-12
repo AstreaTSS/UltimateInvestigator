@@ -57,7 +57,7 @@ class OtherCMDs(utils.Extension):
             " but has no real use."
         ),
     )
-    async def ping(self, ctx: utils.THIAInteractionContext) -> None:
+    async def ping(self, ctx: utils.THIASlashContext) -> None:
         start_time = time.perf_counter()
         average_ping = round((self.bot.latency * 1000), 2)
 
@@ -119,7 +119,7 @@ class OtherCMDs(utils.Extension):
         await ctx.send(embeds=embed, components=button)
 
     @tansy.slash_command("about", description="Gives information about the bot.")
-    async def about(self, ctx: ipy.InteractionContext) -> None:
+    async def about(self, ctx: ipy.THIASlashContext) -> None:
         msg_list = [
             (
                 '> "Hello. I am PYTHIA, the Ultimate Robotic Assistant. I look forward'

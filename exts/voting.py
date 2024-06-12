@@ -120,7 +120,7 @@ class Voting(ipy.Extension):
         name="vote",
         description="Vote for the bot.",
     )
-    async def vote(self, ctx: utils.THIAInteractionContext) -> None:
+    async def vote(self, ctx: utils.THIASlashContext) -> None:
         website_votes: list[str] = [
             f"**{handler.name}** - {handler.vote_url.format(bot_id=self.bot.user.id)}"
             for handler in self.handlers

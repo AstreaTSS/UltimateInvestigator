@@ -232,7 +232,7 @@ class BulletCMDs(utils.Extension):
     @utils.manage_guild_slash_cmd(
         "list-bullets", "Lists all Truth Bullets in the server this is run in."
     )
-    async def list_bullets(self, ctx: utils.THIAInteractionContext) -> None:
+    async def list_bullets(self, ctx: utils.THIASlashContext) -> None:
         guild_bullets = await models.TruthBullet.prisma().find_many(
             where={"guild_id": ctx.guild_id}
         )

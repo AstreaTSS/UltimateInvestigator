@@ -38,7 +38,7 @@ class BulletConfigCMDs(utils.Extension):
             "Lists out the Truth Bullet configuration settings for the server."
         ),
     )
-    async def bullet_config(self, ctx: utils.THIAInteractionContext) -> None:
+    async def bullet_config(self, ctx: utils.THIASlashContext) -> None:
         config = await ctx.fetch_config({"bullets": True, "names": True})
         if typing.TYPE_CHECKING:
             assert config.bullets is not None
@@ -98,7 +98,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def set_bullet_channel(
         self,
-        ctx: utils.THIAInteractionContext,
+        ctx: utils.THIASlashContext,
         channel: typing.Optional[ipy.GuildText] = tansy.Option(
             "The channel to send Truth Bullets to.", default=None
         ),
@@ -133,7 +133,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def set_best_truth_bullet_finder_role(
         self,
-        ctx: utils.THIAInteractionContext,
+        ctx: utils.THIASlashContext,
         role: typing.Optional[ipy.Role] = tansy.Option(
             "The Best Detective role to use.",
             converter=utils.ValidRoleConverter,
@@ -169,7 +169,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def set_player_role(
         self,
-        ctx: utils.THIAInteractionContext,
+        ctx: utils.THIASlashContext,
         role: typing.Optional[ipy.Role] = tansy.Option(
             "The Player role to use.",
             default=None,
@@ -391,7 +391,7 @@ class BulletConfigCMDs(utils.Extension):
     )
     async def toggle_bullets(
         self,
-        ctx: utils.THIAInteractionContext,
+        ctx: utils.THIASlashContext,
         toggle: bool = tansy.Option(
             "Should the Truth Bullets be on (true) or off (false)?"
         ),
