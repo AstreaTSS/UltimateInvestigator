@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <a href="https://pythia.astrea.cc/server_setup.html">
-    <img src="https://img.shields.io/badge/Server_Setup_Guide-Link-f64b50?style=for-the-badge&logo=bookstack&logoColor=f64b50" alt="Server Setup Guide">
+  <a href="https://pythia.astrea.cc/setup/index.html">
+    <img src="https://img.shields.io/badge/Server_Setup_Guides-Link-874bd1?style=for-the-badge&logo=bookstack&logoColor=874bd1" alt="Server Setup Guides">
   </a>
   <a href="https://discord.gg/NSdetwGjpK">
     <img src="https://img.shields.io/badge/Support%20Server-Link-%235865F2?style=for-the-badge&logo=discord" alt="Support Server">
   </a>
   <a href="https://ko-fi.com/astreatss">
-    <img src="https://img.shields.io/badge/Donate_on_Ko--Fi-Link-ff5f5f?style=for-the-badge&logo=ko-fi&logoColor=FFFFFF" alt="Donate on Ko-Fi">
+    <img src="https://img.shields.io/badge/Donate_on_Ko--Fi-Link-DEDEDE?style=for-the-badge&logo=ko-fi&logoColor=DEDEDE" alt="Donate on Ko-Fi">
   </a>
 </p>
 
