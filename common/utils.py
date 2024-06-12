@@ -20,6 +20,7 @@ import interactions as ipy
 import sentry_sdk
 import tansy
 from interactions.ext import prefixed_commands as prefixed
+from prisma.types import PrismaGuildConfigInclude
 
 import common.models as models
 
@@ -275,7 +276,7 @@ else:
 
 
 class THIAContextMixin:
-    guild_config: typing.Optional[models.Config]
+    guild_config: typing.Optional[models.GuildConfig]
     guild_id: ipy.Snowflake
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
@@ -291,7 +292,9 @@ class THIAContextMixin:
         """A reference to the bot instance."""
         return self.client  # type: ignore
 
-    async def fetch_config(self) -> models.Config:
+    async def fetch_config(
+        self, include: PrismaGuildConfigInclude | None = None
+    ) -> models.GuildConfig:
         """
         Gets the configuration for the context's guild.
 
@@ -301,19 +304,7 @@ class THIAContextMixin:
         if self.guild_config:
             return self.guild_config
 
-        config = await models.Config.get_or_none(
-            guild_id=self.guild_id
-        ) or await models.Config.prisma().create(data={"guild_id": self.guild_id})
-
-        if not config.names:
-            config = await models.Config.prisma().update(
-                where={"guild_id": config.guild_id},
-                data={"names": {"create": {}}},
-                include={"names": True},
-            )
-            if typing.TYPE_CHECKING:
-                assert config is not None
-
+        config = await models.GuildConfig.get_or_create(self.guild_id, include)
         self.guild_config = config
         return config
 

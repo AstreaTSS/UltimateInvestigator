@@ -39,36 +39,36 @@ class BulletConfigCMDs(utils.Extension):
         ),
     )
     async def bullet_config(self, ctx: utils.THIAInteractionContext) -> None:
-        config = await ctx.fetch_config()
+        config = await ctx.fetch_config({"bullets": True, "names": True})
+        if typing.TYPE_CHECKING:
+            assert config.bullets is not None
+            assert config.names is not None
 
         str_builder = [
-            f"Truth Bullets: {utils.toggle_friendly_str(config.bullets_enabled)}",
+            (
+                "Player role:"
+                f" {f'<@&{config.player_role}>' if config.player_role else 'N/A'}"
+            ),
+            (
+                "Truth Bullets:"
+                f" {utils.toggle_friendly_str(config.bullets.bullets_enabled)}"
+            ),
             (
                 "Truth Bullet channel:"
-                f" {f'<#{config.bullet_chan_id}>' if config.bullet_chan_id else 'N/A'}"
+                f" {f'<#{config.bullets.bullet_chan_id}>' if config.bullets.bullet_chan_id else 'N/A'}"
             ),
-            "",
+            (
+                "Investigation mode:"
+                f" {config.bullets.investigation_type.name.replace('_', ' ').title()}"
+            ),
+            (
+                "Best Truth Bullet Finder role:"
+                f" {f'<@&{config.bullets.best_bullet_finder_role}>' if config.bullets.best_bullet_finder_role else 'N/A'}"
+            ),
         ]
 
-        str_builder.extend(
-            (
-                (
-                    "Investigation mode:"
-                    f" {config.investigation_type.name.replace('_', ' ').title()}"
-                ),
-                (
-                    "Player role:"
-                    f" {f'<@&{config.player_role}>' if config.player_role else 'N/A'}"
-                ),
-                (
-                    "Best Truth Bullet Finder role:"
-                    f" {f'<@&{config.best_bullet_finder_role}>' if config.best_bullet_finder_role else 'N/A'}"
-                ),
-            )
-        )
-
         embed = ipy.Embed(
-            title=f"Server config for {ctx.guild.name}",
+            title=f"Investigation config for {ctx.guild.name}",
             description="\n".join(str_builder),
             color=utils._bot_color,
             timestamp=ipy.Timestamp.utcnow(),
@@ -114,10 +114,9 @@ class BulletConfigCMDs(utils.Extension):
         if channel and not isinstance(channel, SendMixin):
             raise ipy.errors.BadArgument("The channel must be a text channel.")
 
-        guild_config = await ctx.fetch_config()
-
-        guild_config.bullet_chan_id = channel.id if channel else None
-        await guild_config.save()
+        bullet_config = await models.BulletConfig.get_or_create(ctx.guild_id)
+        bullet_config.bullet_chan_id = channel.id if channel else None
+        await bullet_config.save()
 
         if channel:
             await ctx.send(
@@ -147,9 +146,9 @@ class BulletConfigCMDs(utils.Extension):
                 "You must either specify a role or specify to unset the role."
             )
 
-        guild_config = await ctx.fetch_config()
-        guild_config.best_bullet_finder_role = role.id if role else None
-        await guild_config.save()
+        bullet_config = await models.BulletConfig.get_or_create(ctx.guild_id)
+        bullet_config.best_bullet_finder_role = role.id if role else None
+        await bullet_config.save()
 
         if role:
             await ctx.send(
@@ -193,16 +192,6 @@ class BulletConfigCMDs(utils.Extension):
         else:
             await ctx.send(embed=utils.make_embed("Player role unset."))
 
-    def enable_check(self, config: models.Config) -> None:
-        if not config.player_role:
-            raise utils.CustomCheckFailure(
-                "You still need to set the Player role for this server!"
-            )
-        elif not config.bullet_chan_id:
-            raise utils.CustomCheckFailure(
-                "You still need to set a Truth Bullets channel!"
-            )
-
     @config.subcommand(
         sub_cmd_name="investigation-mode",
         sub_cmd_description="Change the investigation mode.",
@@ -225,19 +214,19 @@ class BulletConfigCMDs(utils.Extension):
         except ValueError:
             raise ipy.errors.BadArgument("Invalid investigation mode.") from None
 
-        guild_config = await ctx.fetch_config()
-        guild_config.investigation_type = investigation_type
-        await guild_config.save()
+        bullet_config = await models.BulletConfig.get_or_create(ctx.guild_id)
+        bullet_config.investigation_type = investigation_type
+        await bullet_config.save()
 
         if investigation_type == models.InvestigationType.COMMAND_ONLY:
             self.bot.msg_enabled_bullets_guilds.discard(int(ctx.guild.id))
-        elif guild_config.bullets_enabled:
+        elif bullet_config.bullets_enabled:
             self.bot.msg_enabled_bullets_guilds.add(int(ctx.guild.id))
 
         await ctx.send(
             embed=utils.make_embed(
                 "Investigation mode set to"
-                f" {guild_config.investigation_type.name.replace('_', ' ').title()}."
+                f" {bullet_config.investigation_type.name.replace('_', ' ').title()}."
             )
         )
 
@@ -260,7 +249,9 @@ class BulletConfigCMDs(utils.Extension):
         if to_change not in {"bullet_names", "bullet_finders"}:
             raise ipy.errors.BadArgument("Invalid change requested!")
 
-        config = await ctx.fetch_config()
+        config = await ctx.fetch_config({"names": True})
+        if typing.TYPE_CHECKING:
+            assert config.names is not None
 
         if to_change == "bullet_names":
             modal = ipy.Modal(
@@ -312,12 +303,14 @@ class BulletConfigCMDs(utils.Extension):
 
     @ipy.modal_callback("bullet_names")
     async def bullet_names_edit(self, ctx: utils.THIAModalContext) -> None:
-        config = await ctx.fetch_config()
+        config = await ctx.fetch_config({"names": True})
+        if typing.TYPE_CHECKING:
+            assert config.names is not None
         names = config.names
 
         names.singular_bullet = ctx.kwargs["singular_name"]
         names.plural_bullet = ctx.kwargs["plural_name"]
-        await names.save()
+        await config.names.save()
 
         await ctx.send(
             embed=utils.make_embed(
@@ -329,7 +322,9 @@ class BulletConfigCMDs(utils.Extension):
 
     @ipy.modal_callback("bullet_finders")
     async def bullet_finders_edit(self, ctx: utils.THIAModalContext) -> None:
-        config = await ctx.fetch_config()
+        config = await ctx.fetch_config({"names": True})
+        if typing.TYPE_CHECKING:
+            assert config.names is not None
         names = config.names
 
         if (
@@ -380,6 +375,16 @@ class BulletConfigCMDs(utils.Extension):
             )
         )
 
+    def enable_check(self, config: models.GuildConfig) -> None:
+        if not config.player_role:
+            raise utils.CustomCheckFailure(
+                "You still need to set the Player role for this server!"
+            )
+        elif not config.bullets or not config.bullets.bullet_chan_id:
+            raise utils.CustomCheckFailure(
+                "You still need to set a Truth Bullets channel!"
+            )
+
     @config.subcommand(
         sub_cmd_name="toggle",
         sub_cmd_description="Turns on or off the Truth Bullets.",
@@ -391,16 +396,19 @@ class BulletConfigCMDs(utils.Extension):
             "Should the Truth Bullets be on (true) or off (false)?"
         ),
     ) -> None:
-        guild_config = await ctx.fetch_config()
+        config = await ctx.fetch_config({"bullets": True})
+        if typing.TYPE_CHECKING:
+            assert config.bullets is not None
+
         if (
-            not guild_config.bullets_enabled and toggle
+            not config.bullets.bullets_enabled and toggle
         ):  # if truth bullets will be enabled by this
-            self.enable_check(guild_config)
+            self.enable_check(config)
 
-        guild_config.bullets_enabled = toggle
-        await guild_config.save()
+        config.bullets.bullets_enabled = toggle
+        await config.bullets.save()
 
-        if guild_config.investigation_type != models.InvestigationType.COMMAND_ONLY:
+        if config.bullets.investigation_type != models.InvestigationType.COMMAND_ONLY:
             if toggle:
                 self.bot.msg_enabled_bullets_guilds.add(int(ctx.guild.id))
             else:
@@ -409,7 +417,7 @@ class BulletConfigCMDs(utils.Extension):
         await ctx.send(
             embed=utils.make_embed(
                 "Truth Bullets turned"
-                f" {utils.toggle_friendly_str(guild_config.bullets_enabled)}!"
+                f" {utils.toggle_friendly_str(config.bullets.bullets_enabled)}!"
             )
         )
 

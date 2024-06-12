@@ -206,7 +206,7 @@ async def start() -> None:
     await db.connect()
     bot.db = db
 
-    for model in await models.Config.prisma().find_many(
+    for model in await models.BulletConfig.prisma().find_many(
         where={
             "bullets_enabled": True,
             "investigation_type": {"not": models.InvestigationType.COMMAND_ONLY},

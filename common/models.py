@@ -15,7 +15,13 @@ from enum import IntEnum
 import interactions as ipy
 import orjson
 from prisma._async_http import Response
-from prisma.models import PrismaConfig, PrismaNames, PrismaTruthBullet
+from prisma.models import (
+    PrismaBulletConfig,
+    PrismaGuildConfig,
+    PrismaNames,
+    PrismaTruthBullet,
+)
+from prisma.types import PrismaGuildConfigInclude, PrismaGuildConfigUpdateInput
 from pydantic import field_serializer, field_validator
 
 
@@ -134,6 +140,8 @@ class TruthBullet(PrismaTruthBullet):
 
 
 class Names(PrismaNames):
+    main_config: "typing.Optional[GuildConfig]" = None
+
     async def save(self) -> None:
         data = self.model_dump(exclude={"config"})
         await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
@@ -144,13 +152,9 @@ class InvestigationType(IntEnum):
     COMMAND_ONLY = 2
 
 
-class Config(PrismaConfig):
+class BulletConfig(PrismaBulletConfig):
     investigation_type: InvestigationType
-
-    if typing.TYPE_CHECKING:
-        names: Names
-    else:
-        names: typing.Optional[Names] = None
+    main_config: "typing.Optional[GuildConfig]" = None
 
     @field_validator("investigation_type", mode="after")
     @classmethod
@@ -163,38 +167,85 @@ class Config(PrismaConfig):
 
     @classmethod
     async def get(cls, guild_id: int) -> typing.Self:
-        config = await cls.prisma().find_unique_or_raise(
-            where={"guild_id": guild_id}, include={"names": True}
+        return await cls.prisma().find_unique_or_raise(where={"guild_id": guild_id})
+
+    @classmethod
+    async def get_or_none(cls, guild_id: int) -> typing.Optional[typing.Self]:
+        return await cls.prisma().find_unique(where={"guild_id": guild_id})
+
+    @classmethod
+    async def get_or_create(cls, guild_id: int) -> typing.Self:
+        return await cls.get_or_none(guild_id) or await cls.prisma().create(
+            data={"guild_id": guild_id}
         )
 
-        if not config.names:
-            config = await cls.prisma().update(
-                where={"guild_id": config.guild_id},
-                data={"names": {"create": {}}},
-                include={"names": True},
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"main_config"})
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
+
+
+class GuildConfig(PrismaGuildConfig):
+    bullets: typing.Optional[BulletConfig] = None
+    names: typing.Optional[Names] = None
+
+    async def _fill_in_include(
+        self, include: PrismaGuildConfigInclude | None
+    ) -> typing.Self:
+        config = self
+
+        add_data: PrismaGuildConfigUpdateInput = {}
+
+        for entry in include:
+            if entry == "names" and not self.names:
+                add_data["names"] = {"create": {}}
+            if entry == "bullets" and not self.bullets:
+                add_data["bullets"] = {"create": {"guild_id": self.guild_id}}
+
+        if add_data:
+            config = await self.prisma().update(
+                where={"guild_id": self.guild_id},
+                data=add_data,
+                include=include,
             )
             if typing.TYPE_CHECKING:
                 assert config is not None
 
+        return self
+
+    @classmethod
+    async def get(
+        cls, guild_id: int, include: PrismaGuildConfigInclude | None = None
+    ) -> typing.Self:
+        config = await cls.prisma().find_unique_or_raise(
+            where={"guild_id": guild_id},
+            include=include,
+        )
+        return await config._fill_in_include(include)
+
+    @classmethod
+    async def get_or_none(
+        cls, guild_id: int, include: PrismaGuildConfigInclude | None = None
+    ) -> typing.Optional[typing.Self]:
+        config = await cls.prisma().find_unique(
+            where={"guild_id": guild_id}, include=include
+        )
+
+        if config:
+            config = await config._fill_in_include(include)
+
         return config
 
     @classmethod
-    async def get_or_none(cls, guild_id: int) -> typing.Optional[typing.Self]:
+    async def get_or_create(
+        cls, guild_id: int, include: PrismaGuildConfigInclude | None = None
+    ) -> typing.Self:
         config = await cls.prisma().find_unique(
-            where={"guild_id": guild_id}, include={"names": True}
-        )
-
-        if config and not config.names:
-            config = await cls.prisma().update(
-                where={"guild_id": config.guild_id},
-                data={"names": {"create": {}}},
-                include={"names": True},
-            )
-
-        return config
+            where={"guild_id": guild_id}, include=include
+        ) or await cls.prisma().create(data={"guild_id": guild_id})
+        return await config._fill_in_include(include)
 
     async def save(self) -> None:
-        data = self.model_dump(exclude={"names", "names_id"})
+        data = self.model_dump(exclude={"names", "names_id", "bullets", "guild_id"})
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
@@ -203,7 +254,7 @@ FIND_TRUTH_BULLET_STR: typing.Final[str] = (
 SELECT
     {', '.join(TruthBullet.model_fields)}
 FROM
-    uinewtruthbullets
+    thiabulletconfig
 WHERE
     channel_id = $1
     AND found = false
@@ -223,7 +274,7 @@ VALIDATE_TRUTH_BULLET_STR: typing.Final[str] = (
 SELECT
     1
 FROM
-    uinewtruthbullets
+    thiabulletconfig
 WHERE
     channel_id = $1
     AND (
@@ -242,7 +293,7 @@ FIND_TRUTH_BULLET_EXACT_STR: typing.Final[str] = (
 SELECT
     {', '.join(TruthBullet.model_fields)}
 FROM
-    uinewtruthbullets
+    thiabulletconfig
 WHERE
     channel_id = $1
     AND (
@@ -263,3 +314,7 @@ class FastResponse(Response):
 
 
 Response.json = FastResponse.json  # type: ignore
+
+
+Names.model_rebuild()
+BulletConfig.model_rebuild()

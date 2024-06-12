@@ -1,0 +1,2 @@
+POSTGRES_PASSWORD="CODESPACES_PASSWORD"
+DB_URL="postgres://postgres:CODESPACES_PASSWORD@localhost/postgres"

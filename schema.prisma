@@ -18,22 +18,32 @@ model PrismaNames {
   plural_truth_bullet_finder   String @default("{{bullet_name}} Finders")
   best_bullet_finder           String @default("Best {{bullet_finder}}")
 
-  config PrismaConfig?
+  config PrismaGuildConfig?
 
   @@map("thianames")
 }
 
-model PrismaConfig {
+model PrismaBulletConfig {
   guild_id                BigInt       @id @default(autoincrement())
   bullet_chan_id          BigInt?
   best_bullet_finder_role BigInt?
-  player_role             BigInt?
   bullets_enabled         Boolean      @default(false)
   investigation_type      Int          @default(1) @db.SmallInt
-  names                   PrismaNames? @relation(fields: [names_id], references: [id], onDelete: Cascade)
-  names_id                Int?         @unique
+
+  main_config PrismaGuildConfig?
 
   @@map("thiabulletconfig")
+}
+
+model PrismaGuildConfig {
+  guild_id                BigInt       @id
+  player_role             BigInt?
+
+  names                   PrismaNames? @relation(fields: [names_id], references: [id], onDelete: Cascade)
+  names_id                Int?         @unique
+  bullets           PrismaBulletConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+
+  @@map("thiaguildconfig")
 }
 
 model PrismaTruthBullet {

@@ -10,6 +10,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import asyncio
 import collections
 import importlib
+import typing
 
 import interactions as ipy
 import tansy
@@ -29,7 +30,7 @@ class BulletFinding(utils.Extension):
         self,
         guild: ipy.Guild,
         bullet_chan: ipy.GuildText | None,
-        config: models.Config,
+        config: models.GuildConfig,
     ) -> None:
         if (
             await models.TruthBullet.prisma().count(
@@ -38,6 +39,10 @@ class BulletFinding(utils.Extension):
             > 0
         ):
             return
+
+        if typing.TYPE_CHECKING:
+            assert config.bullets is not None
+            assert config.names is not None
 
         counter: collections.Counter[int] = collections.Counter()
 
@@ -80,20 +85,22 @@ class BulletFinding(utils.Extension):
         if not bullet_chan:
             bullet_chan = await self.bot.fetch_channel(config.bullet_chan_id)
             if not bullet_chan or not isinstance(bullet_chan, SendMixin):
-                config.bullets_enabled = False
+                config.bullets.bullets_enabled = False
                 self.bot.msg_enabled_bullets_guilds.discard(int(guild.id))
-                config.bullet_chan_id = None
-                await config.save()
+                config.bullets.bullet_chan_id = None
+                await config.bullets.save()
                 return
 
         await bullet_chan.send("\n".join(str_builder))
 
-        config.bullets_enabled = False
-        await config.save()
+        config.bullets.bullets_enabled = False
+        await config.bullets.save()
         self.bot.msg_enabled_bullets_guilds.discard(int(guild.id))
 
-        if config.best_bullet_finder_role and (
-            best_bullet_finder_obj := guild.get_role(config.best_bullet_finder_role)
+        if config.bullets.best_bullet_finder_role and (
+            best_bullet_finder_obj := guild.get_role(
+                config.bullets.best_bullet_finder_role
+            )
         ):
             for person_id in most_found_people:
                 try:
@@ -126,20 +133,27 @@ class BulletFinding(utils.Extension):
         if int(message.guild.id) not in self.bot.msg_enabled_bullets_guilds:
             return
 
-        guild_config = await models.Config.get_or_none(guild_id=message.guild.id)
+        config = await models.GuildConfig.get_or_none(
+            guild_id=message.guild.id, include={"bullets": True, "names": True}
+        )
 
-        if not guild_config:
+        if not config:
             return
 
+        if typing.TYPE_CHECKING:
+            assert config.bullets is not None
+            assert config.names is not None
+
         if (
-            not guild_config.bullets_enabled
-            or not guild_config.player_role
-            or not message.author.has_role(guild_config.player_role)
-            or guild_config.investigation_type == models.InvestigationType.COMMAND_ONLY
+            not config.bullets.bullets_enabled
+            or not config.player_role
+            or not message.author.has_role(config.player_role)
+            or config.bullets.investigation_type
+            == models.InvestigationType.COMMAND_ONLY
         ):
             if (
-                not guild_config.bullets_enabled
-                or guild_config.investigation_type
+                not config.bullets.bullets_enabled
+                or config.bullets.investigation_type
                 == models.InvestigationType.COMMAND_ONLY
             ):
                 self.bot.msg_enabled_bullets_guilds.discard(int(message.guild.id))
@@ -156,16 +170,16 @@ class BulletFinding(utils.Extension):
 
         bullet_chan: ipy.GuildText | None = None
         embed = bullet_found.found_embed(
-            str(message.author), guild_config.names.singular_bullet
+            str(message.author), config.names.singular_bullet
         )
 
         if not bullet_found.hidden:
-            bullet_chan = await self.bot.fetch_channel(guild_config.bullet_chan_id)
+            bullet_chan = await self.bot.fetch_channel(config.bullets.bullet_chan_id)
             if not bullet_chan or not isinstance(bullet_chan, SendMixin):
-                guild_config.bullets_enabled = False
+                config.bullets.bullets_enabled = False
                 self.bot.msg_enabled_bullets_guilds.discard(int(message.guild.id))
-                guild_config.bullet_chan_id = None
-                await guild_config.save()
+                config.bullets.bullet_chan_id = None
+                await config.bullets.save()
                 return
 
             new_msg = await message.reply(embed=embed)
@@ -190,14 +204,14 @@ class BulletFinding(utils.Extension):
             except ipy.errors.HTTPException:
                 await message.channel.send(
                     f"{message.author.mention}, I couldn't DM you a(n)"
-                    f" {guild_config.names.singular_bullet}. Please enable DMs for this"
+                    f" {config.names.singular_bullet}. Please enable DMs for this"
                     " server and this bot and try again.",
                     delete_after=5,
                 )
                 return
 
         await bullet_found.save()
-        await self.check_for_finish(message.guild, bullet_chan, guild_config)
+        await self.check_for_finish(message.guild, bullet_chan, config)
 
     @tansy.slash_command(
         name="investigate",
@@ -212,9 +226,12 @@ class BulletFinding(utils.Extension):
         ctx: utils.THIASlashContext,
         trigger: str = tansy.Option("The trigger to search for in this channel."),
     ) -> None:
-        config = await ctx.fetch_config()
+        config = await ctx.fetch_config(include={"bullets": True, "names": True})
+        if typing.TYPE_CHECKING:
+            assert config.bullets is not None
+            assert config.names is not None
 
-        if not config.bullets_enabled:
+        if not config.bullets.bullets_enabled:
             self.bot.msg_enabled_bullets_guilds.discard(int(ctx.guild_id))
             raise utils.CustomCheckFailure(
                 f"{config.names.plural_bullet} are not enabled in this server."
@@ -242,12 +259,12 @@ class BulletFinding(utils.Extension):
         message = await ctx.send(embed=embed, ephemeral=ctx.ephemeral)
 
         if not truth_bullet.hidden:
-            bullet_chan = await self.bot.fetch_channel(config.bullet_chan_id)
+            bullet_chan = await self.bot.fetch_channel(config.bullets.bullet_chan_id)
             if not bullet_chan or not isinstance(bullet_chan, SendMixin):
-                config.bullets_enabled = False
+                config.bullets.bullets_enabled = False
                 self.bot.msg_enabled_bullets_guilds.discard(int(ctx.guild_id))
-                config.bullet_chan_id = None
-                await config.save()
+                config.bullets.bullet_chan_id = None
+                await config.bullets.save()
                 return
 
             await bullet_chan.send(

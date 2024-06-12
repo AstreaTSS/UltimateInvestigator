@@ -24,16 +24,16 @@ class EtcEvents(ipy.Extension):
         if not self.bot.is_ready:
             return
 
-        _ = await models.Config.get_or_none(
-            guild_id=int(event.guild_id)
-        ) or await models.Config.prisma().create(data={"guild_id": int(event.guild_id)})
+        await models.GuildConfig.get_or_create(event.guild_id)
 
     @ipy.listen("guild_left")
     async def on_guild_left(self, event: ipy.events.GuildLeft) -> None:
         if not self.bot.is_ready:
             return
 
-        await models.Config.prisma().delete(where={"guild_id": int(event.guild_id)})
+        await models.GuildConfig.prisma().delete(
+            where={"guild_id": int(event.guild_id)}
+        )
 
 
 def setup(bot: utils.THIABase) -> None:
