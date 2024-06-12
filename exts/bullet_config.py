@@ -363,10 +363,17 @@ class BulletConfigCMDs(utils.Extension):
     async def toggle_bullets(
         self,
         ctx: utils.THIASlashContext,
-        toggle: bool = tansy.Option(
-            "Should Truth Bullets be turned on (true) or off (false)?"
+        _toggle: str = tansy.Option(
+            "Should Truth Bullets be turned on or off?",
+            name="toggle",
+            choices=[
+                ipy.SlashCommandChoice("on", "on"),
+                ipy.SlashCommandChoice("off", "off"),
+            ],
         ),
     ) -> None:
+        toggle = _toggle == "on"
+
         config = await ctx.fetch_config({"bullets": True})
         if typing.TYPE_CHECKING:
             assert config.bullets is not None
