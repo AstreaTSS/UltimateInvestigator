@@ -50,7 +50,7 @@ class BulletConfigCMDs(utils.Extension):
                 f" {f'<@&{config.player_role}>' if config.player_role else 'N/A'}"
             ),
             (
-                "Investigation status:"
+                "Truth Bullets status:"
                 f" {utils.toggle_friendly_str(config.bullets.bullets_enabled)}"
             ),
             (
@@ -93,7 +93,7 @@ class BulletConfigCMDs(utils.Extension):
         await ctx.send(embed=embed)
 
     @config.subcommand(
-        sub_cmd_name="investigation-channel",
+        sub_cmd_name="channel",
         sub_cmd_description="Sets (or unsets) where all Truth Bullets are sent to.",
     )
     async def set_bullet_channel(
@@ -128,7 +128,7 @@ class BulletConfigCMDs(utils.Extension):
             await ctx.send(embed=utils.make_embed("Investigation channel unset."))
 
     @config.subcommand(
-        sub_cmd_name="best-truth-bullet-finder",
+        sub_cmd_name="best-finder",
         sub_cmd_description="Sets (or unsets) the Best Truth Bullet Finder role.",
     )
     async def set_best_truth_bullet_finder_role(
@@ -162,7 +162,7 @@ class BulletConfigCMDs(utils.Extension):
             )
 
     @config.subcommand(
-        sub_cmd_name="investigation-mode",
+        sub_cmd_name="mode",
         sub_cmd_description="Change the investigation mode.",
     )
     async def set_investigation_mode(
@@ -358,13 +358,13 @@ class BulletConfigCMDs(utils.Extension):
 
     @config.subcommand(
         sub_cmd_name="toggle",
-        sub_cmd_description="Enables or disables the investigation.",
+        sub_cmd_description="Enables or disables Truth Bullets.",
     )
     async def toggle_bullets(
         self,
         ctx: utils.THIASlashContext,
         toggle: bool = tansy.Option(
-            "Should the investigation be turbed on (true) or off (false)?"
+            "Should Truth Bullets be turned on (true) or off (false)?"
         ),
     ) -> None:
         config = await ctx.fetch_config({"bullets": True})
@@ -387,7 +387,7 @@ class BulletConfigCMDs(utils.Extension):
 
         await ctx.send(
             embed=utils.make_embed(
-                "Investigation turned"
+                "Truth Bullets turned"
                 f" {utils.toggle_friendly_str(config.bullets.bullets_enabled)}!"
             )
         )
