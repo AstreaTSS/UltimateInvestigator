@@ -21,6 +21,7 @@ import sentry_sdk
 import tansy
 from interactions.ext import prefixed_commands as prefixed
 from prisma.types import PrismaGuildConfigInclude
+from typing_extensions import TypeVar
 
 import common.models as models
 
@@ -275,8 +276,11 @@ else:
         pass
 
 
-class THIAContextMixin:
-    guild_config: typing.Optional[models.GuildConfig]
+ConfigT = TypeVar("ConfigT", bound=models.GuildConfigMixin, default=models.GuildConfig)
+
+
+class THIAContextMixin(typing.Generic[ConfigT]):
+    guild_config: typing.Optional[ConfigT]
     guild_id: ipy.Snowflake
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
@@ -293,33 +297,35 @@ class THIAContextMixin:
         return self.client  # type: ignore
 
     async def fetch_config(
-        self, include: PrismaGuildConfigInclude | None = None
-    ) -> models.GuildConfig:
+        self,
+        include: PrismaGuildConfigInclude | None = None,
+        model: type[ConfigT] = models.GuildConfig,
+    ) -> ConfigT:
         """
         Gets the configuration for the context's guild.
 
         Returns:
-            GuildConfig: The guild config.
+            The guild config.
         """
         if self.guild_config:
             return self.guild_config
 
-        config = await models.GuildConfig.get_or_create(self.guild_id, include)
+        config = await model.get_or_create(self.guild_id, include)
         self.guild_config = config
         return config
 
 
-class THIABaseContext(THIAContextMixin, ipy.BaseContext):
+class THIABaseContext(THIAContextMixin[ConfigT], ipy.BaseContext):
     pass
 
 
-class THIAModalContext(THIAContextMixin, ipy.ModalContext):
+class THIAModalContext(THIAContextMixin[ConfigT], ipy.ModalContext):
     pass
 
 
-class THIAInteractionContext(THIAContextMixin, ipy.InteractionContext):
+class THIAInteractionContext(THIAContextMixin[ConfigT], ipy.InteractionContext):
     pass
 
 
-class THIASlashContext(THIAContextMixin, ipy.SlashContext):
+class THIASlashContext(THIAContextMixin[ConfigT], ipy.SlashContext):
     pass

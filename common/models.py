@@ -184,21 +184,31 @@ class BulletConfig(PrismaBulletConfig):
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
-class GuildConfig(PrismaGuildConfig):
-    bullets: typing.Optional[BulletConfig] = None
-    names: typing.Optional[Names] = None
+class GuildConfigMixin:
+    guild_id: ipy.Snowflake
+
+    if typing.TYPE_CHECKING:
+        from prisma import actions
+
+        @classmethod
+        def prisma(cls) -> actions.PrismaGuildConfigActions[typing.Self]: ...
+
+        model_dump: typing.Callable[..., dict[str, typing.Any]]
 
     async def _fill_in_include(
         self, include: PrismaGuildConfigInclude | None
     ) -> typing.Self:
         config = self
 
+        if not include:
+            return self
+
         add_data: PrismaGuildConfigUpdateInput = {}
 
         for entry in include:
-            if entry == "names" and not self.names:
+            if entry == "names" and not getattr(self, "names", True):
                 add_data["names"] = {"create": {}}
-            if entry == "bullets" and not self.bullets:
+            if entry == "bullets" and not getattr(self, "bullets", True):
                 add_data["bullets"] = {"create": {"guild_id": self.guild_id}}
 
         if add_data:
@@ -247,6 +257,11 @@ class GuildConfig(PrismaGuildConfig):
     async def save(self) -> None:
         data = self.model_dump(exclude={"names", "names_id", "bullets", "guild_id"})
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
+
+
+class GuildConfig(GuildConfigMixin, PrismaGuildConfig):
+    bullets: typing.Optional[BulletConfig] = None
+    names: typing.Optional[Names] = None
 
 
 FIND_TRUTH_BULLET_STR: typing.Final[str] = (
