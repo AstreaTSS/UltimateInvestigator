@@ -11,7 +11,7 @@ generator client {
 }
 
 model PrismaNames {
-  id                           Int    @id @default(autoincrement())
+  guild_id                     BigInt @id
   singular_bullet              String @default("Truth Bullet")
   plural_bullet                String @default("Truth Bullets")
   singular_truth_bullet_finder String @default("{{bullet_name}} Finder")
@@ -24,11 +24,11 @@ model PrismaNames {
 }
 
 model PrismaBulletConfig {
-  guild_id                BigInt       @id @default(autoincrement())
+  guild_id                BigInt  @id
   bullet_chan_id          BigInt?
   best_bullet_finder_role BigInt?
-  bullets_enabled         Boolean      @default(false)
-  investigation_type      Int          @default(1) @db.SmallInt
+  bullets_enabled         Boolean @default(false)
+  investigation_type      Int     @default(1) @db.SmallInt
 
   main_config PrismaGuildConfig?
 
@@ -36,12 +36,11 @@ model PrismaBulletConfig {
 }
 
 model PrismaGuildConfig {
-  guild_id                BigInt       @id
-  player_role             BigInt?
+  guild_id    BigInt  @id
+  player_role BigInt?
 
-  names                   PrismaNames? @relation(fields: [names_id], references: [id], onDelete: Cascade)
-  names_id                Int?         @unique
-  bullets           PrismaBulletConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+  names   PrismaNames?        @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade, map: "thiaguildconfig_guild_id_names_fkey")
+  bullets PrismaBulletConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade, map: "thiaguildconfig_guild_id_bullets_fkey")
 
   @@map("thiaguildconfig")
 }

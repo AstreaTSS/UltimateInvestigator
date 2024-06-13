@@ -143,8 +143,8 @@ class Names(PrismaNames):
     main_config: "typing.Optional[GuildConfig]" = None
 
     async def save(self) -> None:
-        data = self.model_dump(exclude={"config"})
-        await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
+        data = self.model_dump(exclude={"main_config"})
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
 class InvestigationType(IntEnum):
@@ -207,7 +207,7 @@ class GuildConfigMixin:
 
         for entry in include:
             if entry == "names" and not getattr(self, "names", True):
-                add_data["names"] = {"create": {}}
+                add_data["names"] = {"create": {"guild_id": self.guild_id}}
             if entry == "bullets" and not getattr(self, "bullets", True):
                 add_data["bullets"] = {"create": {"guild_id": self.guild_id}}
 
