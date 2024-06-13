@@ -139,32 +139,7 @@ class TruthBullet(PrismaTruthBullet):
         await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
 
 
-class Names(PrismaNames):
-    main_config: "typing.Optional[GuildConfig]" = None
-
-    async def save(self) -> None:
-        data = self.model_dump(exclude={"main_config"})
-        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
-
-
-class InvestigationType(IntEnum):
-    DEFAULT = 1
-    COMMAND_ONLY = 2
-
-
-class BulletConfig(PrismaBulletConfig):
-    investigation_type: InvestigationType
-    main_config: "typing.Optional[GuildConfig]" = None
-
-    @field_validator("investigation_type", mode="after")
-    @classmethod
-    def _transform_int_into_investigation_type(cls, value: int) -> InvestigationType:
-        return InvestigationType(value)
-
-    @field_serializer("investigation_type", when_used="always")
-    def _transform_investigation_type_into_int(self, value: InvestigationType) -> int:
-        return value.value
-
+class GetMethodsMixin:
     @classmethod
     async def get(cls, guild_id: int) -> typing.Self:
         return await cls.prisma().find_unique_or_raise(where={"guild_id": guild_id})
@@ -178,6 +153,33 @@ class BulletConfig(PrismaBulletConfig):
         return await cls.get_or_none(guild_id) or await cls.prisma().create(
             data={"guild_id": guild_id}
         )
+
+
+class Names(GetMethodsMixin, PrismaNames):
+    main_config: "typing.Optional[GuildConfig]" = None
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"main_config"})
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
+
+
+class InvestigationType(IntEnum):
+    DEFAULT = 1
+    COMMAND_ONLY = 2
+
+
+class BulletConfig(GetMethodsMixin, PrismaBulletConfig):
+    investigation_type: InvestigationType
+    main_config: "typing.Optional[GuildConfig]" = None
+
+    @field_validator("investigation_type", mode="after")
+    @classmethod
+    def _transform_int_into_investigation_type(cls, value: int) -> InvestigationType:
+        return InvestigationType(value)
+
+    @field_serializer("investigation_type", when_used="always")
+    def _transform_investigation_type_into_int(self, value: InvestigationType) -> int:
+        return value.value
 
     async def save(self) -> None:
         data = self.model_dump(exclude={"main_config"})

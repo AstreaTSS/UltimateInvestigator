@@ -274,14 +274,11 @@ class BulletConfigCMDs(utils.Extension):
 
     @ipy.modal_callback("bullet_names")
     async def bullet_names_edit(self, ctx: utils.THIAModalContext) -> None:
-        config = await ctx.fetch_config({"names": True})
-        if typing.TYPE_CHECKING:
-            assert config.names is not None
-        names = config.names
+        names = await models.Names.get_or_create(ctx.guild_id)
 
         names.singular_bullet = ctx.kwargs["singular_name"]
         names.plural_bullet = ctx.kwargs["plural_name"]
-        await config.names.save()
+        await names.save()
 
         await ctx.send(
             embed=utils.make_embed(
@@ -293,10 +290,7 @@ class BulletConfigCMDs(utils.Extension):
 
     @ipy.modal_callback("bullet_finders")
     async def bullet_finders_edit(self, ctx: utils.THIAModalContext) -> None:
-        config = await ctx.fetch_config({"names": True})
-        if typing.TYPE_CHECKING:
-            assert config.names is not None
-        names = config.names
+        names = await models.Names.get_or_create(ctx.guild_id)
 
         if (
             var_name := models.TEMPLATE_MARKDOWN.search(
