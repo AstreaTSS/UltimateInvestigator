@@ -220,9 +220,7 @@ class BulletConfigCMDs(utils.Extension):
         if to_change not in {"bullet_names", "bullet_finders"}:
             raise ipy.errors.BadArgument("Invalid change requested!")
 
-        config = await ctx.fetch_config({"names": True})
-        if typing.TYPE_CHECKING:
-            assert config.names is not None
+        names = await models.Names.get_or_create(ctx.guild_id)
 
         if to_change == "bullet_names":
             modal = ipy.Modal(
@@ -230,14 +228,14 @@ class BulletConfigCMDs(utils.Extension):
                     label="Singular Bullet Name",
                     style=ipy.TextStyles.SHORT,
                     custom_id="singular_name",
-                    value=config.names.singular_bullet,
+                    value=names.singular_bullet,
                     max_length=40,
                 ),
                 ipy.InputText(
                     label="Plural Bullet Name",
                     style=ipy.TextStyles.SHORT,
                     custom_id="plural_name",
-                    value=config.names.plural_bullet,
+                    value=names.plural_bullet,
                     max_length=40,
                 ),
                 title="Edit Truth Bullet Names",
@@ -249,21 +247,21 @@ class BulletConfigCMDs(utils.Extension):
                     label="Singular Truth Bullet Finder",
                     style=ipy.TextStyles.SHORT,
                     custom_id="singular_truth_bullet_finder",
-                    value=config.names.singular_truth_bullet_finder,
+                    value=names.singular_truth_bullet_finder,
                     max_length=70,
                 ),
                 ipy.InputText(
                     label="Plural Truth Bullet Finder",
                     style=ipy.TextStyles.SHORT,
                     custom_id="plural_truth_bullet_finder",
-                    value=config.names.plural_truth_bullet_finder,
+                    value=names.plural_truth_bullet_finder,
                     max_length=70,
                 ),
                 ipy.InputText(
                     label="Best Bullet Finder Name",
                     style=ipy.TextStyles.SHORT,
                     custom_id="best_bullet_finder",
-                    value=config.names.best_bullet_finder,
+                    value=names.best_bullet_finder,
                     max_length=70,
                 ),
                 title="Edit Truth Bullet Finder Names",
