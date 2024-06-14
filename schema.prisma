@@ -46,16 +46,16 @@ enum Rarity {
 }
 
 model PrismaGachaItem {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   guild_id    BigInt
   name        String
   description String
   image       String?
-  rarity      Rarity @default(COMMON)
-  amount      Int    @default(-1)
+  rarity      Rarity  @default(COMMON)
+  amount      Int     @default(-1)
 
-  players PrismaGachaPlayer[]
-  gacha_config PrismaGachaConfig @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+  players      PrismaGachaPlayer[]
+  gacha_config PrismaGachaConfig   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@index([guild_id])
   @@index([name])
@@ -64,16 +64,18 @@ model PrismaGachaItem {
 }
 
 model PrismaGachaPlayer {
-  user_guild_id String @id
-  currency_amount Int @default(0)
+  user_guild_id   String @id
+  currency_amount Int    @default(0)
 
   items PrismaGachaItem[]
+
   @@map("thiagachaplayers")
 }
 
 model PrismaGachaConfig {
-  guild_id      BigInt @id
-  currency_cost Int    @default(1)
+  guild_id      BigInt  @id
+  enabled       Boolean @default(false)
+  currency_cost Int     @default(1)
 
   items       PrismaGachaItem[]
   main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)

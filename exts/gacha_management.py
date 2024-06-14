@@ -38,6 +38,33 @@ class GachaManagement(utils.Extension):
     )
 
     @config.subcommand(
+        "toggle", sub_cmd_description="Enables or disables the entire gacha system."
+    )
+    async def gacha_toggle(
+        self,
+        ctx: utils.THIASlashContext,
+        _toggle: str = tansy.Option(
+            "Should the gacha system be turned on or off?",
+            name="toggle",
+            choices=[
+                ipy.SlashCommandChoice("on", "on"),
+                ipy.SlashCommandChoice("off", "off"),
+            ],
+        ),
+    ) -> None:
+        toggle = _toggle == "on"
+
+        await models.GachaConfig.prisma().update(
+            data={"enabled": toggle}, where={"guild_id": ctx.guild_id}
+        )
+
+        await ctx.send(
+            embed=utils.make_embed(
+                f"Gacha system turned {utils.toggle_friendly_str(toggle)}!"
+            )
+        )
+
+    @config.subcommand(
         "name",
         sub_cmd_description="Sets the name of the currency to be used.",
     )
@@ -107,25 +134,10 @@ class GachaManagement(utils.Extension):
     async def gacha_give(
         self,
         ctx: utils.THIASlashContext,
-        user: ipy.Member = tansy.Option(
-            "The user to give currency to. Must have the Player role.", type=ipy.User
-        ),
+        user: ipy.Member = tansy.Option("The user to give currency to."),
         amount: int = tansy.Option("The amount of currency to give."),
     ) -> None:
-        config = await ctx.fetch_config({"names": True})
-        if typing.TYPE_CHECKING:
-            assert config.names is not None
-
-        if not config.player_role:
-            raise utils.CustomCheckFailure(
-                "Player role not set. Please set it with"
-                f" {self.bot.mention_command('config player')} first."
-            )
-
-        if not user.has_role(config.player_role):
-            raise ipy.errors.BadArgument(
-                "The user must have the Player role to receive currency."
-            )
+        names = await models.Names.get_or_create(ctx.guild_id)
 
         player = await models.GachaPlayer.prisma().upsert(
             where={"user_guild_id": f"{ctx.guild_id}-{user.id}"},
@@ -140,7 +152,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(
             embed=utils.make_embed(
-                f"Gave {amount} {config.names.currency_name(amount)} to {user.mention}."
+                f"Gave {amount} {names.currency_name(amount)} to {user.mention}."
                 f" New total: {player.currency_amount}."
             )
         )
@@ -153,25 +165,11 @@ class GachaManagement(utils.Extension):
         self,
         ctx: utils.THIASlashContext,
         user: ipy.Member = tansy.Option(
-            "The user to remove currency from. Must have the Player role.",
-            type=ipy.User,
+            "The user to remove currency from.",
         ),
         amount: int = tansy.Option("The amount of currency to remove."),
     ) -> None:
-        config = await ctx.fetch_config({"names": True})
-        if typing.TYPE_CHECKING:
-            assert config.names is not None
-
-        if not config.player_role:
-            raise utils.CustomCheckFailure(
-                "Player role not set. Please set it with"
-                f" {self.bot.mention_command('config player')} first."
-            )
-
-        if not user.has_role(config.player_role):
-            raise ipy.errors.BadArgument(
-                "The user must have the Player role to remove currency."
-            )
+        names = await models.Names.get_or_create(ctx.guild_id)
 
         player = await models.GachaPlayer.prisma().upsert(
             where={"user_guild_id": f"{ctx.guild_id}-{user.id}"},
@@ -186,7 +184,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(
             embed=utils.make_embed(
-                f"Removed {amount} {config.names.currency_name(amount)} from"
+                f"Removed {amount} {names.currency_name(amount)} from"
                 f" {user.mention}. New total: {player.currency_amount}."
             )
         )
@@ -199,29 +197,14 @@ class GachaManagement(utils.Extension):
         self,
         ctx: utils.THIASlashContext,
         user: ipy.Member = tansy.Option(
-            "The user to reset currency for. Must have the Player role.",
+            "The user to reset currency for.",
             type=ipy.User,
         ),
     ) -> None:
-        config = await ctx.fetch_config({"names": True})
-        if typing.TYPE_CHECKING:
-            assert config.names is not None
-
-        if not config.player_role:
-            raise utils.CustomCheckFailure(
-                "Player role not set. Please set it with"
-                f" {self.bot.mention_command('config player')} first."
-            )
-
-        if not user.has_role(config.player_role):
-            raise ipy.errors.BadArgument(
-                "The user must have the Player role to reset currency."
-            )
-
         amount = await models.GachaPlayer.prisma().update_many(
             where={
                 "user_guild_id": f"{ctx.guild_id}-{user.id}",
-                "currency_amount": {"gt": 0},
+                "currency_amount": {"not": 0},
             },
             data={"currency_amount": 0},
         )
@@ -230,6 +213,62 @@ class GachaManagement(utils.Extension):
             raise ipy.errors.BadArgument("The user has no currency to reset.")
 
         await ctx.send(embed=utils.make_embed(f"Reset currency for {user.mention}."))
+
+    @config.subcommand(
+        "clear-user",
+        sub_cmd_description=(
+            "Clears/removes gacha data, including currency and items, for a user."
+        ),
+    )
+    async def gacha_clear_user(
+        self,
+        ctx: utils.THIASlashContext,
+        user: ipy.Member = tansy.Option(
+            "The user to clear data for.",
+            type=ipy.User,
+        ),
+    ) -> None:
+        amount = await models.GachaPlayer.prisma().delete_many(
+            where={
+                "user_guild_id": f"{ctx.guild_id}-{user.id}",
+            },
+        )
+
+        if not amount:
+            raise ipy.errors.BadArgument("The user has no data to clear.")
+
+        await ctx.send(
+            embed=utils.make_embed(f"Cleared/Removed data for {user.mention}.")
+        )
+
+    @config.subcommand(
+        "clear",
+        sub_cmd_description="Clears ALL gacha user and items data. Use with caution!",
+    )
+    async def gacha_clear(
+        self,
+        ctx: utils.THIASlashContext,
+        confirm: bool = tansy.Option(
+            "Actually clear? Set this to true if you're sure.", default=False
+        ),
+    ) -> None:
+        if not confirm:
+            raise ipy.errors.BadArgument(
+                "Confirm option not set to true. Please set the option `confirm` to"
+                " true to continue."
+            )
+
+        players_amount = await models.GachaPlayer.prisma().delete_many(
+            where={"user_guild_id": {"startswith": f"{ctx.guild_id}-"}}
+        )
+        items_amount = await models.GachaItem.prisma().delete_many(
+            where={"guild_id": ctx.guild_id}
+        )
+
+        if players_amount + items_amount <= 0:
+            raise utils.CustomCheckFailure("There's no gacha data to clear!")
+
+        await ctx.send(embed=utils.make_embed("All gacha user and items data cleared."))
 
     @config.subcommand(
         "give-all",
