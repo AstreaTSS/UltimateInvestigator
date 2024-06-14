@@ -70,19 +70,20 @@ class Voting(ipy.Extension):
                 )
             )
 
-        if os.environ.get("DBL_TOKEN"):
-            self.handlers.append(
-                VoteHandler(
-                    name="Discord Bot List",
-                    base_url="https://discordbotlist.com/api/v1",
-                    headers={"Authorization": os.environ["DBL_TOKEN"]},
-                    data_url="/bots/{bot_id}/stats",
-                    data_callback=lambda guild_count: {"guilds": guild_count},
-                    vote_url=(
-                        "https://discordbotlist.com/bots/ultimate-investigator/upvote"
-                    ),
-                )
-            )
+        # TODO: how do renames work?
+        # if os.environ.get("DBL_TOKEN"):
+        #     self.handlers.append(
+        #         VoteHandler(
+        #             name="Discord Bot List",
+        #             base_url="https://discordbotlist.com/api/v1",
+        #             headers={"Authorization": os.environ["DBL_TOKEN"]},
+        #             data_url="/bots/{bot_id}/stats",
+        #             data_callback=lambda guild_count: {"guilds": guild_count},
+        #             vote_url=(
+        #                 "https://discordbotlist.com/bots/ultimate-investigator/upvote"
+        #             ),
+        #         )
+        #     )
 
         if not self.handlers:
             raise ValueError("No voting handlers were configured.")
