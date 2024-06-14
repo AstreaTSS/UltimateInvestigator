@@ -119,7 +119,7 @@ class OtherCMDs(utils.Extension):
         await ctx.send(embeds=embed, components=button)
 
     @tansy.slash_command("about", description="Gives information about the bot.")
-    async def about(self, ctx: ipy.THIASlashContext) -> None:
+    async def about(self, ctx: utils.THIASlashContext) -> None:
         msg_list = [
             (
                 '> "Hello. I am PYTHIA, the Ultimate Robotic Assistant. I look forward'
