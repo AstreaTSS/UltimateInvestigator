@@ -103,3 +103,26 @@ async def autocomplete_aliases(
         score_cutoff=0.6,
     )
     return await ctx.send([{"name": a[0], "value": a[0]} for a in query][:25])  # type: ignore
+
+
+def get_gacha_item_name(item: models.GachaItem) -> str:
+    return item.name.lower() if isinstance(item, models.GachaItem) else item
+
+
+async def autocomplete_gacha_item(
+    ctx: ipy.AutocompleteContext,
+    name: str,
+    **kwargs: typing.Any,  # noqa: ARG001
+) -> None:
+    if not name:
+        return await ctx.send([])
+
+    gacha_items = await models.GachaItem.prisma().find_many()
+
+    query: list[list[models.GachaItem]] = extract_from_list(
+        argument=name.lower(),
+        list_of_items=gacha_items,
+        processors=[get_gacha_item_name],
+        score_cutoff=0.6,
+    )
+    return await ctx.send([{"name": g[0].name, "value": g[0].name} for g in query][:25])  # type: ignore

@@ -17,8 +17,10 @@ model PrismaNames {
   singular_truth_bullet_finder String @default("{{bullet_name}} Finder")
   plural_truth_bullet_finder   String @default("{{bullet_name}} Finders")
   best_bullet_finder           String @default("Best {{bullet_finder}}")
+  singular_currency_name       String @default("Coin")
+  plural_currency_name         String @default("Coins")
 
-  config PrismaGuildConfig?   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+  main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@map("thianames")
 }
@@ -30,9 +32,53 @@ model PrismaBulletConfig {
   bullets_enabled         Boolean @default(false)
   investigation_type      Int     @default(1) @db.SmallInt
 
-  main_config PrismaGuildConfig?  @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+  main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@map("thiabulletconfig")
+}
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  SUPER_RARE
+  LEGENDARY
+}
+
+model PrismaGachaItem {
+  id          Int    @id @default(autoincrement())
+  guild_id    BigInt
+  name        String
+  description String
+  image       String?
+  rarity      Rarity @default(COMMON)
+  amount      Int    @default(-1)
+
+  players PrismaGachaPlayer[]
+  gacha_config PrismaGachaConfig @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+
+  @@index([guild_id])
+  @@index([name])
+  @@index([rarity])
+  @@map("thiagachaitems")
+}
+
+model PrismaGachaPlayer {
+  user_guild_id String @id
+  currency_amount Int @default(0)
+
+  items PrismaGachaItem[]
+  @@map("thiagachaplayers")
+}
+
+model PrismaGachaConfig {
+  guild_id      BigInt @id
+  currency_cost Int    @default(1)
+
+  items       PrismaGachaItem[]
+  main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+
+  @@map("thiagachaconfig")
 }
 
 model PrismaGuildConfig {
@@ -41,6 +87,7 @@ model PrismaGuildConfig {
 
   names   PrismaNames?
   bullets PrismaBulletConfig?
+  gacha   PrismaGachaConfig?
 
   @@map("thiaguildconfig")
 }
@@ -56,6 +103,8 @@ model PrismaTruthBullet {
   finder      BigInt?
   hidden      Boolean  @default(false)
 
-  @@index([trigger, channel_id, guild_id, found], map: "idx_uinewtruthb_name_37580d")
+  @@index([channel_id])
+  @@index([guild_id])
+  @@index([found])
   @@map("thiatruthbullets")
 }

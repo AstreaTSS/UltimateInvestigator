@@ -17,11 +17,18 @@ import orjson
 from prisma._async_http import Response
 from prisma.models import (
     PrismaBulletConfig,
+    PrismaGachaConfig,
+    PrismaGachaItem,
+    PrismaGachaPlayer,
     PrismaGuildConfig,
     PrismaNames,
     PrismaTruthBullet,
 )
-from prisma.types import PrismaGuildConfigInclude, PrismaGuildConfigUpdateInput
+from prisma.types import (
+    PrismaGachaPlayerInclude,
+    PrismaGuildConfigInclude,
+    PrismaGuildConfigUpdateInput,
+)
 from pydantic import field_serializer, field_validator
 
 
@@ -158,6 +165,9 @@ class GetMethodsMixin:
 class Names(GetMethodsMixin, PrismaNames):
     main_config: "typing.Optional[GuildConfig]" = None
 
+    def currency_name(self, amount: int) -> str:
+        return self.singular_currency_name if amount == 1 else self.plural_currency_name
+
     async def save(self) -> None:
         data = self.model_dump(exclude={"main_config"})
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
@@ -180,6 +190,77 @@ class BulletConfig(GetMethodsMixin, PrismaBulletConfig):
     @field_serializer("investigation_type", when_used="always")
     def _transform_investigation_type_into_int(self, value: InvestigationType) -> int:
         return value.value
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"main_config"})
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
+
+
+class GachaItem(PrismaGachaItem):
+    players: "typing.Optional[list[GachaPlayer]]" = None
+    gacha_config: "typing.Optional[GachaConfig]" = None
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"gacha_config", "players"})
+        await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
+
+
+class GachaPlayer(PrismaGachaPlayer):
+    items: "typing.Optional[list[GachaItem]]" = None
+
+    @classmethod
+    async def get(
+        cls,
+        guild_id: int,
+        user_id: int,
+        include: PrismaGachaPlayerInclude | None = None,
+    ) -> typing.Self:
+        return await cls.prisma().find_unique_or_raise(
+            where={"user_guild_id": f"{guild_id}-{user_id}"}, include=include
+        )
+
+    @classmethod
+    async def get_or_none(
+        cls,
+        guild_id: int,
+        user_id: int,
+        include: PrismaGachaPlayerInclude | None = None,
+    ) -> typing.Optional[typing.Self]:
+        return await cls.prisma().find_unique(
+            where={"user_guild_id": f"{guild_id}-{user_id}"}, include=include
+        )
+
+    @classmethod
+    async def get_or_create(
+        cls,
+        guild_id: int,
+        user_id: int,
+        include: PrismaGachaPlayerInclude | None = None,
+    ) -> typing.Self:
+        return await cls.get_or_none(
+            guild_id, user_id, include=include
+        ) or await cls.prisma().create(data={"user_guild_id": f"{guild_id}-{user_id}"})
+
+    @property
+    def guild_id(self) -> int:
+        return int(self.user_guild_id.split("-")[0])
+
+    @property
+    def user_id(self) -> int:
+        return int(self.user_guild_id.split("-")[1])
+
+    async def save(self) -> None:
+        data = self.model_dump(
+            exclude={
+                "items",
+            }
+        )
+        await self.prisma().update(where={"user_guild_id": self.user_guild_id}, data=data)  # type: ignore
+
+
+class GachaConfig(GetMethodsMixin, PrismaGachaConfig):
+    items: "typing.Optional[list[GachaItem]]" = None
+    main_config: "typing.Optional[GuildConfig]" = None
 
     async def save(self) -> None:
         data = self.model_dump(exclude={"main_config"})
@@ -212,6 +293,8 @@ class GuildConfigMixin:
                 add_data["names"] = {"create": {"guild_id": self.guild_id}}
             if entry == "bullets" and not getattr(self, "bullets", True):
                 add_data["bullets"] = {"create": {"guild_id": self.guild_id}}
+            if entry == "gacha" and not getattr(self, "gacha", True):
+                add_data["gacha"] = {"create": {"guild_id": self.guild_id}}
 
         if add_data:
             config = await self.prisma().update(
@@ -335,3 +418,6 @@ Response.json = FastResponse.json  # type: ignore
 
 Names.model_rebuild()
 BulletConfig.model_rebuild()
+GachaItem.model_rebuild()
+GachaConfig.model_rebuild()
+GachaPlayer.model_rebuild()
