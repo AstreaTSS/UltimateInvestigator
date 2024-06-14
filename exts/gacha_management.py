@@ -18,6 +18,12 @@ import common.models as models
 import common.utils as utils
 
 
+def short_desc(description: str) -> str:
+    if len(description) > 25:
+        description = description[:22] + "..."
+    return description
+
+
 class GachaManagement(utils.Extension):
     def __init__(self, bot: utils.THIABase) -> None:
         self.name = "Gacha Management"
@@ -317,9 +323,12 @@ class GachaManagement(utils.Extension):
             "Currency:"
             f" {player.currency_amount} {names.currency_name(player.currency_amount)}"
         ]
-        if player.items:
+        if player.items:  # TODO: paginate if needed
             str_build.append("\nItems:")
-            str_build.extend(f"{item.name} - {item.amount}" for item in player.items)
+            str_build.extend(
+                f"**{item.name}** - {short_desc(item.description)}"
+                for item in player.items
+            )
 
         await ctx.send(
             embed=utils.make_embed(
@@ -404,7 +413,7 @@ class GachaManagement(utils.Extension):
         await ctx.send(embed=utils.make_embed(f"Added item {name} to the gacha."))
 
     @config.subcommand(
-        "item-edits",
+        "item-edit",
         sub_cmd_description="Edits an item in the gacha.",
     )
     @ipy.auto_defer(enabled=False)
@@ -491,7 +500,49 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(embed=utils.make_embed(f"Edit item {name}."))
 
+    @config.subcommand(
+        "item-remove",
+        sub_cmd_description="Removes an item from the gacha.",
+    )
+    async def gacha_item_remove(
+        self,
+        ctx: utils.THIASlashContext,
+        name: str = tansy.Option("The name of the item to remove.", autocomplete=True),
+    ) -> None:
+        amount = await models.GachaItem.prisma().delete_many(
+            where={"guild_id": ctx.guild_id, "name": name}
+        )
+        if amount <= 0:
+            raise ipy.errors.BadArgument("No item with that name exists.")
+
+        await ctx.send(f"Deleted {name}.")
+
+    @config.subcommand(
+        "view-items", sub_cmd_description="Views all gacha items for this server."
+    )
+    async def gacha_view_items(
+        self,
+        ctx: utils.THIASlashContext,
+    ) -> None:
+        items = await models.GachaItem.prisma().find_many(
+            where={"guild_id": ctx.guild_id}
+        )
+
+        if not items:
+            raise utils.CustomCheckFailure("This server has no items to show.")
+
+        # TODO: paginate if needed
+        await ctx.send(
+            embed=utils.make_embed(
+                "\n".join(
+                    f"**{i.name}** ({i.amount} remaining): {short_desc(i.description)}"
+                    for i in items
+                )
+            )
+        )
+
     @gacha_item_edit.autocomplete("name")
+    @gacha_item_remove.autocomplete("name")
     async def _autocomplete_gacha_items(
         self,
         ctx: ipy.AutocompleteContext,
