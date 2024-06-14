@@ -393,7 +393,8 @@ class GachaManagement(utils.Extension):
     async def gacha_view_all_currencies(self, ctx: utils.THIASlashContext) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
         players = await models.GachaPlayer.prisma().find_many(
-            where={"user_guild_id": {"startswith": f"{ctx.guild_id}-"}}
+            where={"user_guild_id": {"startswith": f"{ctx.guild_id}-"}},
+            order={"currency_amount": "desc"},
         )
 
         if not players:
@@ -403,7 +404,7 @@ class GachaManagement(utils.Extension):
         str_build.extend(
             f"{player.user_id} -"
             f" {player.currency_amount} {names.currency_name(player.currency_amount)}"
-            for player in sorted(players, key=lambda x: x.currency_amount, reverse=True)
+            for player in players
         )
 
         await ctx.send(
