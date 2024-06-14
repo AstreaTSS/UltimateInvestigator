@@ -269,7 +269,9 @@ class GachaManagement(utils.Extension):
             type=ipy.User,
         ),
     ) -> None:
-        player = await models.GachaPlayer.get_or_none(ctx.guild_id, user.id)
+        player = await models.GachaPlayer.get_or_none(
+            ctx.guild_id, user.id, include={"items": True}
+        )
         if player is None:
             raise ipy.errors.BadArgument("The user has no data for gacha.")
 
@@ -424,7 +426,9 @@ class GachaManagement(utils.Extension):
         ),
     ) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
-        player = await models.GachaPlayer.get_or_none(ctx.guild_id, user.id)
+        player = await models.GachaPlayer.get_or_none(
+            ctx.guild_id, user.id, include={"items": True}
+        )
 
         if player is None:
             raise ipy.errors.BadArgument("The user has no data for gacha.")

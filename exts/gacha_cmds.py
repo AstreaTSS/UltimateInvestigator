@@ -53,7 +53,9 @@ class GachaCommands(utils.Extension):
         if not ctx.author.has_role(config.player_role):
             raise utils.CustomCheckFailure("You do not have the Player role.")
 
-        player = await models.GachaPlayer.get_or_create(ctx.guild.id, ctx.author.id)
+        player = await models.GachaPlayer.get_or_create(
+            ctx.guild.id, ctx.author.id, include={"items": True}
+        )
 
         if player.currency_amount < config.gacha.currency_cost:
             raise utils.CustomCheckFailure(
@@ -108,7 +110,9 @@ class GachaCommands(utils.Extension):
         if not config.player_role or not config.gacha.enabled:
             raise utils.CustomCheckFailure("Gacha is not enabled in this server.")
 
-        player = await models.GachaPlayer.get_or_none(ctx.guild_id, ctx.author.id)
+        player = await models.GachaPlayer.get_or_none(
+            ctx.guild_id, ctx.author.id, include={"items": True}
+        )
         if player is None:
             raise ipy.errors.BadArgument("You have no data for gacha.")
 
