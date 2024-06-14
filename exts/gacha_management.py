@@ -21,7 +21,7 @@ import common.utils as utils
 
 def short_desc(description: str) -> str:
     if len(description) > 25:
-        description = description[:22] + "..."
+        description = f"{description[:22]}..."
     return description
 
 
@@ -32,10 +32,44 @@ class GachaManagement(utils.Extension):
 
     config = tansy.SlashCommand(
         name="gacha-management",
-        description="Handles management of gachas.",
+        description="Handles management of gacha mechanics.",
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
+
+    @config.subcommand(
+        "info",
+        sub_cmd_description=(
+            "Lists out the gacha configuration settings for the server."
+        ),
+    )
+    async def gacha_info(self, ctx: utils.THIASlashContext) -> None:
+        config = await ctx.fetch_config({"gacha": True, "names": True})
+        if typing.TYPE_CHECKING:
+            assert config.gacha is not None
+            assert config.names is not None
+
+        str_builder = [
+            (
+                "Player role:"
+                f" {f'<@&{config.player_role}>' if config.player_role else 'N/A'}"
+            ),
+            f"Gacha status: {utils.toggle_friendly_str(config.gacha.enabled)}",
+            f"Gacha use cost:{config.gacha.currency_cost}",
+        ]
+
+        embed = utils.make_embed(
+            "\n".join(str_builder),
+            title=f"Gacha config for {ctx.guild.name}",
+        )
+
+        names = (
+            f"Singular Currency Name: {config.names.singular_currency_name}\nPlural"
+            f" Currency Name: {config.names.plural_currency_name}"
+        )
+
+        embed.add_field("Names", names, inline=True)
+        await ctx.send(embed=embed)
 
     @config.subcommand(
         "toggle", sub_cmd_description="Enables or disables the entire gacha system."
@@ -371,11 +405,7 @@ class GachaManagement(utils.Extension):
                 )
                 for chunk in chunks
             ]
-            embeds[0].description = (
-                "Currency:"
-                f" {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**"
-                + embeds[0].description
-            )
+            embeds[0].description = f"Currency: {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**" + embeds[0].description  # type: ignore
 
             pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot, *embeds, timeout=120
