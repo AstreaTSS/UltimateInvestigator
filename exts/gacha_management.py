@@ -258,6 +258,32 @@ class GachaManagement(utils.Extension):
         await ctx.send(embed=utils.make_embed(f"Reset currency for {user.mention}."))
 
     @config.subcommand(
+        "reset-items",
+        sub_cmd_description="Resets items for a user.",
+    )
+    async def gacha_reset_items(
+        self,
+        ctx: utils.THIASlashContext,
+        user: ipy.Member = tansy.Option(
+            "The user to reset items for.",
+            type=ipy.User,
+        ),
+    ) -> None:
+        player = await models.GachaPlayer.get_or_none(ctx.guild_id, user.id)
+        if player is None:
+            raise ipy.errors.BadArgument("The user has no data for gacha.")
+
+        await models.GachaPlayer.prisma().update(
+            where={"user_guild_id": f"{ctx.guild_id}-{user.id}"},
+            data={
+                "items": {
+                    "disconnect": [{"id": item.id} for item in player.items or []]
+                }
+            },
+        )
+        await ctx.send(embed=utils.make_embed(f"Reset items for {user.mention}."))
+
+    @config.subcommand(
         "clear-user",
         sub_cmd_description=(
             "Clears/removes gacha data, including currency and items, for a user."
