@@ -88,6 +88,15 @@ class GachaManagement(utils.Extension):
     ) -> None:
         toggle = _toggle == "on"
 
+        if toggle:
+            config = await models.GuildConfig.get_or_create(ctx.guild_id)
+
+            if not config.player_role:
+                raise utils.CustomCheckFailure(
+                    "Player role not set. Please set it with"
+                    f" {self.bot.mention_command('config player')} first."
+                )
+
         await models.GachaConfig.prisma().update(
             data={"enabled": toggle}, where={"guild_id": ctx.guild_id}
         )
@@ -162,10 +171,10 @@ class GachaManagement(utils.Extension):
         )
 
     @config.subcommand(
-        "give",
+        "give-currency",
         sub_cmd_description="Gives a user a certain amount of currency.",
     )
-    async def gacha_give(
+    async def gacha_give_currency(
         self,
         ctx: utils.THIASlashContext,
         user: ipy.Member = tansy.Option("The user to give currency to."),
@@ -192,10 +201,10 @@ class GachaManagement(utils.Extension):
         )
 
     @config.subcommand(
-        "remove",
+        "remov-currency",
         sub_cmd_description="Removes a certain amount of currency from a user.",
     )
-    async def gacha_remove(
+    async def gacha_remove_currency(
         self,
         ctx: utils.THIASlashContext,
         user: ipy.Member = tansy.Option(
@@ -276,7 +285,7 @@ class GachaManagement(utils.Extension):
         )
 
     @config.subcommand(
-        "clear",
+        "clear-everything",
         sub_cmd_description="Clears ALL gacha user and items data. Use with caution!",
     )
     async def gacha_clear(
@@ -305,7 +314,7 @@ class GachaManagement(utils.Extension):
         await ctx.send(embed=utils.make_embed("All gacha user and items data cleared."))
 
     @config.subcommand(
-        "give-all",
+        "give-players",
         sub_cmd_description=(
             "Gives all users with the Player role a certain amount of currency."
         ),
@@ -394,7 +403,8 @@ class GachaManagement(utils.Extension):
             raise ipy.errors.BadArgument("The user has no data for gacha.")
 
         items_list = [
-            f"**{item.name}** - {short_desc(item.description)}" for item in player.items
+            f"**{item.name}** - {short_desc(item.description)}"
+            for item in (player.items or [])
         ]
         if len(items_list) > 30:
             chunks = [items_list[x : x + 30] for x in range(0, len(items_list), 30)]
