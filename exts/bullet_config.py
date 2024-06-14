@@ -70,7 +70,7 @@ class BulletConfigCMDs(utils.Extension):
         embed = ipy.Embed(
             title=f"Investigation config for {ctx.guild.name}",
             description="\n".join(str_builder),
-            color=utils._bot_color,
+            color=utils.BOT_COLOR,
             timestamp=ipy.Timestamp.utcnow(),
         )
 

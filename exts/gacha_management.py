@@ -14,6 +14,7 @@ import interactions as ipy
 import tansy
 
 import common.fuzzy as fuzzy
+import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 
@@ -319,22 +320,41 @@ class GachaManagement(utils.Extension):
         if player is None:
             raise ipy.errors.BadArgument("The user has no data for gacha.")
 
-        str_build: list[str] = [
-            "Currency:"
-            f" {player.currency_amount} {names.currency_name(player.currency_amount)}"
+        items_list = [
+            f"**{item.name}** - {short_desc(item.description)}" for item in player.items
         ]
-        if player.items:  # TODO: paginate if needed
-            str_build.append("\nItems:")
-            str_build.extend(
-                f"**{item.name}** - {short_desc(item.description)}"
-                for item in player.items
+        if len(items_list) > 30:
+            chunks = [items_list[x : x + 30] for x in range(0, len(items_list), 30)]
+            embeds = [
+                utils.make_embed(
+                    "\n".join(chunk),
+                    title=f"{user.display_name}'s Gacha Data",
+                )
+                for chunk in chunks
+            ]
+            embeds[0].description = (
+                "Currency:"
+                f" {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**"
+                + embeds[0].description
             )
 
-        await ctx.send(
-            embed=utils.make_embed(
-                "\n".join(str_build), title=f"{user.display_name}'s Gacha Data"
+            pag = help_tools.HelpPaginator.create_from_embeds(
+                self.bot, *embeds, timeout=120
             )
-        )
+            await pag.send(ctx)
+        else:
+            items_list.insert(
+                0,
+                "Currency:"
+                f" {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**",
+            )
+
+            await ctx.send(
+                embed=utils.make_embed(
+                    "\n".join(items_list),
+                    title="Items",
+                )
+            )
 
     @config.subcommand(
         "item-add",
@@ -531,15 +551,32 @@ class GachaManagement(utils.Extension):
         if not items:
             raise utils.CustomCheckFailure("This server has no items to show.")
 
-        # TODO: paginate if needed
-        await ctx.send(
-            embed=utils.make_embed(
-                "\n".join(
-                    f"**{i.name}** ({i.amount} remaining): {short_desc(i.description)}"
-                    for i in items
+        items_list = [
+            f"**{i.name}**{f' ({i.amount} remaining)' if i.amount else ''}:"
+            f" {short_desc(i.description)}"
+            for i in items
+        ]
+        if len(items_list) > 30:
+            chunks = [items_list[x : x + 30] for x in range(0, len(items_list), 30)]
+            embeds = [
+                utils.make_embed(
+                    "\n".join(chunk),
+                    title="Items",
+                )
+                for chunk in chunks
+            ]
+
+            pag = help_tools.HelpPaginator.create_from_embeds(
+                self.bot, *embeds, timeout=120
+            )
+            await pag.send(ctx)
+        else:
+            await ctx.send(
+                embed=utils.make_embed(
+                    "\n".join(items_list),
+                    title="Items",
                 )
             )
-        )
 
     @gacha_item_edit.autocomplete("name")
     @gacha_item_remove.autocomplete("name")
@@ -553,4 +590,5 @@ class GachaManagement(utils.Extension):
 def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     importlib.reload(fuzzy)
+    importlib.reload(help_tools)
     GachaManagement(bot)

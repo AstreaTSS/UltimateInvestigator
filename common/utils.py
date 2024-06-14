@@ -29,6 +29,8 @@ SENTRY_ENABLED = bool(os.environ.get("SENTRY_DSN", False))  # type: ignore
 
 VOTING_ENABLED = bool(os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN"))
 
+BOT_COLOR = ipy.Color(int(os.environ["BOT_COLOR"]))
+
 logger = logging.getLogger("uibot")
 
 
@@ -53,14 +55,11 @@ def error_embed_generate(error_msg: str) -> ipy.Embed:
     )
 
 
-_bot_color = ipy.Color(int(os.environ["BOT_COLOR"]))
-
-
 def make_embed(description: str, *, title: str | None = None) -> ipy.Embed:
     return ipy.Embed(
         title=title,
         description=description,
-        color=_bot_color,
+        color=BOT_COLOR,
         timestamp=ipy.Timestamp.utcnow(),
     )
 
