@@ -162,13 +162,13 @@ class PYTHIA(utils.THIABase):
         await super().stop()
 
 
-# honestly don't think i need the members stuff
 intents = ipy.Intents.new(
     guilds=True,
     guild_emojis_and_stickers=True,
     messages=True,
     reactions=True,
     message_content=True,
+    guild_members=True,
 )
 mentions = ipy.AllowedMentions.all()
 

@@ -18,7 +18,7 @@ model PrismaNames {
   plural_truth_bullet_finder   String @default("{{bullet_name}} Finders")
   best_bullet_finder           String @default("Best {{bullet_finder}}")
 
-  config PrismaGuildConfig?
+  config PrismaGuildConfig?   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@map("thianames")
 }
@@ -30,7 +30,7 @@ model PrismaBulletConfig {
   bullets_enabled         Boolean @default(false)
   investigation_type      Int     @default(1) @db.SmallInt
 
-  main_config PrismaGuildConfig?
+  main_config PrismaGuildConfig?  @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@map("thiabulletconfig")
 }
@@ -39,8 +39,8 @@ model PrismaGuildConfig {
   guild_id    BigInt  @id
   player_role BigInt?
 
-  names   PrismaNames?        @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade, map: "thiaguildconfig_guild_id_names_fkey")
-  bullets PrismaBulletConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade, map: "thiaguildconfig_guild_id_bullets_fkey")
+  names   PrismaNames?
+  bullets PrismaBulletConfig?
 
   @@map("thiaguildconfig")
 }
