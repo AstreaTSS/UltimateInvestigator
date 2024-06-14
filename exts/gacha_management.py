@@ -201,7 +201,7 @@ class GachaManagement(utils.Extension):
         )
 
     @config.subcommand(
-        "remov-currency",
+        "remove-currency",
         sub_cmd_description="Removes a certain amount of currency from a user.",
     )
     async def gacha_remove_currency(
