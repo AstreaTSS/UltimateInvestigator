@@ -405,7 +405,10 @@ class GachaManagement(utils.Extension):
                 )
                 for chunk in chunks
             ]
-            embeds[0].description = f"Currency: {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**" + embeds[0].description  # type: ignore
+            embeds[0].description = (
+                "Currency:"
+                f" {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**{embeds[0].description}"
+            )
 
             pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot, *embeds, timeout=120
