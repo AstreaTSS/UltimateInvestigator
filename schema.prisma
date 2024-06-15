@@ -64,7 +64,7 @@ model PrismaGachaItem {
 }
 
 model PrismaGachaPlayer {
-  user_guild_id   String @id
+  guild_user_id   String @id
   currency_amount Int    @default(0)
 
   items PrismaGachaItem[]

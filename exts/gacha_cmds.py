@@ -76,7 +76,7 @@ class GachaCommands(utils.Extension):
             )
 
         await models.GachaPlayer.prisma().update(
-            where={"user_guild_id": player.user_guild_id},
+            where={"guild_user_id": player.guild_user_id},
             data={
                 "currency_amount": {"decrement": config.gacha.currency_cost},
                 "items": {
@@ -145,7 +145,7 @@ class GachaCommands(utils.Extension):
             if not ctx.author.has_role(config.player_role):
                 raise ipy.errors.BadArgument("You have no data for gacha.")
             player = await models.GachaPlayer.prisma().create(
-                data={"user_guild_id": f"{ctx.guild_id}-{ctx.author.id}"}
+                data={"guild_user_id": f"{ctx.guild_id}-{ctx.author.id}"}
             )
 
         if player.currency_amount < amount:
@@ -158,7 +158,7 @@ class GachaCommands(utils.Extension):
             if not recipient.has_role(config.player_role):
                 raise ipy.errors.BadArgument("The recipient has no data for gacha.")
             recipient_player = await models.GachaPlayer.prisma().create(
-                data={"user_guild_id": f"{ctx.guild_id}-{recipient.id}"}
+                data={"guild_user_id": f"{ctx.guild_id}-{recipient.id}"}
             )
 
         recipient_player.currency_amount += amount
@@ -187,7 +187,7 @@ class GachaCommands(utils.Extension):
                 "guild_id": ctx.guild_id,
                 "name": name,
                 "players": {
-                    "some": {"user_guild_id": f"{ctx.guild_id}-{ctx.author.id}"}
+                    "some": {"guild_user_id": f"{ctx.guild_id}-{ctx.author.id}"}
                 },
             },
         )

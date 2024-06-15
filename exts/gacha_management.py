@@ -177,10 +177,10 @@ class GachaManagement(utils.Extension):
         names = await models.Names.get_or_create(ctx.guild_id)
 
         player = await models.GachaPlayer.prisma().upsert(
-            where={"user_guild_id": f"{ctx.guild_id}-{user.id}"},
+            where={"guild_user_id": f"{ctx.guild_id}-{user.id}"},
             data={
                 "create": {
-                    "user_guild_id": f"{ctx.guild_id}-{user.id}",
+                    "guild_user_id": f"{ctx.guild_id}-{user.id}",
                     "currency_amount": amount,
                 },
                 "update": {"currency_amount": {"increment": amount}},
@@ -209,10 +209,10 @@ class GachaManagement(utils.Extension):
         names = await models.Names.get_or_create(ctx.guild_id)
 
         player = await models.GachaPlayer.prisma().upsert(
-            where={"user_guild_id": f"{ctx.guild_id}-{user.id}"},
+            where={"guild_user_id": f"{ctx.guild_id}-{user.id}"},
             data={
                 "create": {
-                    "user_guild_id": f"{ctx.guild_id}-{user.id}",
+                    "guild_user_id": f"{ctx.guild_id}-{user.id}",
                     "currency_amount": amount,
                 },
                 "update": {"currency_amount": {"decrement": amount}},
@@ -240,7 +240,7 @@ class GachaManagement(utils.Extension):
     ) -> None:
         amount = await models.GachaPlayer.prisma().update_many(
             where={
-                "user_guild_id": f"{ctx.guild_id}-{user.id}",
+                "guild_user_id": f"{ctx.guild_id}-{user.id}",
                 "currency_amount": {"not": 0},
             },
             data={"currency_amount": 0},
@@ -270,7 +270,7 @@ class GachaManagement(utils.Extension):
             raise ipy.errors.BadArgument("The user has no data for gacha.")
 
         await models.GachaPlayer.prisma().update(
-            where={"user_guild_id": f"{ctx.guild_id}-{user.id}"},
+            where={"guild_user_id": f"{ctx.guild_id}-{user.id}"},
             data={
                 "items": {
                     "disconnect": [{"id": item.id} for item in player.items or []]
@@ -295,7 +295,7 @@ class GachaManagement(utils.Extension):
     ) -> None:
         amount = await models.GachaPlayer.prisma().delete_many(
             where={
-                "user_guild_id": f"{ctx.guild_id}-{user.id}",
+                "guild_user_id": f"{ctx.guild_id}-{user.id}",
             },
         )
 
@@ -324,7 +324,7 @@ class GachaManagement(utils.Extension):
             )
 
         players_amount = await models.GachaPlayer.prisma().delete_many(
-            where={"user_guild_id": {"startswith": f"{ctx.guild_id}-"}}
+            where={"guild_user_id": {"startswith": f"{ctx.guild_id}-"}}
         )
         items_amount = await models.GachaItem.prisma().delete_many(
             where={"guild_id": ctx.guild_id}
@@ -366,10 +366,10 @@ class GachaManagement(utils.Extension):
         async with self.bot.db.batch_() as batch:
             for member in actual_role.members:
                 batch.prismagachaplayer.upsert(
-                    where={"user_guild_id": f"{ctx.guild_id}-{member.id}"},
+                    where={"guild_user_id": f"{ctx.guild_id}-{member.id}"},
                     data={
                         "create": {
-                            "user_guild_id": f"{ctx.guild_id}-{member.id}",
+                            "guild_user_id": f"{ctx.guild_id}-{member.id}",
                             "currency_amount": amount,
                         },
                         "update": {"currency_amount": {"increment": amount}},
@@ -389,7 +389,7 @@ class GachaManagement(utils.Extension):
     async def gacha_view_all_currencies(self, ctx: utils.THIASlashContext) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
         players = await models.GachaPlayer.prisma().find_many(
-            where={"user_guild_id": {"startswith": f"{ctx.guild_id}-"}},
+            where={"guild_user_id": {"startswith": f"{ctx.guild_id}-"}},
             order={"currency_amount": "desc"},
         )
 

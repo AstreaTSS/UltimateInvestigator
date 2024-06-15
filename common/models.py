@@ -241,7 +241,7 @@ class GachaPlayer(PrismaGachaPlayer):
         include: PrismaGachaPlayerInclude | None = None,
     ) -> typing.Self:
         return await cls.prisma().find_unique_or_raise(
-            where={"user_guild_id": f"{guild_id}-{user_id}"}, include=include
+            where={"guild_user_id": f"{guild_id}-{user_id}"}, include=include
         )
 
     @classmethod
@@ -252,7 +252,7 @@ class GachaPlayer(PrismaGachaPlayer):
         include: PrismaGachaPlayerInclude | None = None,
     ) -> typing.Optional[typing.Self]:
         return await cls.prisma().find_unique(
-            where={"user_guild_id": f"{guild_id}-{user_id}"}, include=include
+            where={"guild_user_id": f"{guild_id}-{user_id}"}, include=include
         )
 
     @classmethod
@@ -264,15 +264,15 @@ class GachaPlayer(PrismaGachaPlayer):
     ) -> typing.Self:
         return await cls.get_or_none(
             guild_id, user_id, include=include
-        ) or await cls.prisma().create(data={"user_guild_id": f"{guild_id}-{user_id}"})
+        ) or await cls.prisma().create(data={"guild_user_id": f"{guild_id}-{user_id}"})
 
     @property
     def guild_id(self) -> int:
-        return int(self.user_guild_id.split("-")[0])
+        return int(self.guild_user_id.split("-")[0])
 
     @property
     def user_id(self) -> int:
-        return int(self.user_guild_id.split("-")[1])
+        return int(self.guild_user_id.split("-")[1])
 
     def create_profile(self, user_display_name: str, names: "Names") -> list[ipy.Embed]:
         str_builder = [
@@ -318,7 +318,7 @@ class GachaPlayer(PrismaGachaPlayer):
                 "items",
             }
         )
-        await self.prisma().update(where={"user_guild_id": self.user_guild_id}, data=data)  # type: ignore
+        await self.prisma().update(where={"guild_user_id": self.guild_user_id}, data=data)  # type: ignore
 
 
 class GachaConfig(GetMethodsMixin, PrismaGachaConfig):

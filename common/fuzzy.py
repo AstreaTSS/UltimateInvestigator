@@ -148,7 +148,7 @@ async def autocomplete_gacha_user_item(
     gacha_items = await models.GachaItem.prisma().find_many(
         where={
             "guild_id": ctx.guild_id,
-            "players": {"some": {"user_guild_id": f"{ctx.guild_id}-{ctx.author.id}"}},
+            "players": {"some": {"guild_user_id": f"{ctx.guild_id}-{ctx.author.id}"}},
         }
     )
     if not gacha_items:

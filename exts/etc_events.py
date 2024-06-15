@@ -35,6 +35,11 @@ class EtcEvents(ipy.Extension):
             where={"guild_id": int(event.guild_id)}
         )
 
+        # doesn't get deleted by cascade
+        await models.GachaPlayer.prisma().delete_many(
+            where={"guild_user_id": {"startswith": f"{event.guild_id}-"}}
+        )
+
 
 def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
