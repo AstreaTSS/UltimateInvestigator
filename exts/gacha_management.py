@@ -414,7 +414,7 @@ class GachaManagement(utils.Extension):
         )
 
     @config.subcommand(
-        "view",
+        "user-profile",
         sub_cmd_description="Views the currency amount and items of a user.",
     )
     async def gacha_view(
@@ -433,41 +433,15 @@ class GachaManagement(utils.Extension):
         if player is None:
             raise ipy.errors.BadArgument("The user has no data for gacha.")
 
-        items_list = [
-            f"**{item.name}** - {short_desc(item.description)}"
-            for item in (player.items or [])
-        ]
-        if len(items_list) > 30:
-            chunks = [items_list[x : x + 30] for x in range(0, len(items_list), 30)]
-            embeds = [
-                utils.make_embed(
-                    "\n".join(chunk),
-                    title=f"{user.display_name}'s Gacha Data",
-                )
-                for chunk in chunks
-            ]
-            embeds[0].description = (
-                "Currency:"
-                f" {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**{embeds[0].description}"
-            )
+        embeds = player.create_profile(user.display_name, names)
 
+        if len(embeds) > 1:
             pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot, *embeds, timeout=120
             )
-            await pag.send(ctx)
+            await pag.send(ctx, ephemeral=True)
         else:
-            items_list.insert(
-                0,
-                "Currency:"
-                f" {player.currency_amount} {names.currency_name(player.currency_amount)}\n\n**Items:**",
-            )
-
-            await ctx.send(
-                embed=utils.make_embed(
-                    "\n".join(items_list),
-                    title="Items",
-                )
-            )
+            await ctx.send(embedS=embeds, ephemeral=True)
 
     @config.subcommand(
         "item-add",
@@ -651,6 +625,22 @@ class GachaManagement(utils.Extension):
         await ctx.send(f"Deleted {name}.")
 
     @config.subcommand(
+        "view-single-item", sub_cmd_description="Views an item in the gacha."
+    )
+    async def gacha_view_single_item(
+        self,
+        ctx: utils.THIASlashContext,
+        name: str = tansy.Option("The name of the item to view.", autocomplete=True),
+    ) -> None:
+        item = await models.GachaItem.prisma().find_first(
+            where={"guild_id": ctx.guild_id, "name": name}
+        )
+        if item is None:
+            raise ipy.errors.BadArgument("No item with that name exists.")
+
+        await ctx.send(embed=item.embed(show_amount=True))
+
+    @config.subcommand(
         "view-items", sub_cmd_description="Views all gacha items for this server."
     )
     async def gacha_view_items(
@@ -693,6 +683,7 @@ class GachaManagement(utils.Extension):
 
     @gacha_item_edit.autocomplete("name")
     @gacha_item_remove.autocomplete("name")
+    @gacha_view_single_item.autocomplete("name")
     async def _autocomplete_gacha_items(
         self,
         ctx: ipy.AutocompleteContext,

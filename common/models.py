@@ -56,6 +56,12 @@ def code_template(value: str) -> str:
     return TEMPLATE_MARKDOWN.sub(r"`\1`", value)
 
 
+def short_desc(description: str, length: int = 25) -> str:
+    if len(description) > length:
+        description = f"{description[:length-3]}..."
+    return description
+
+
 class TruthBullet(PrismaTruthBullet):
     aliases: set[str]
 
@@ -200,6 +206,25 @@ class GachaItem(PrismaGachaItem):
     players: "typing.Optional[list[GachaPlayer]]" = None
     gacha_config: "typing.Optional[GachaConfig]" = None
 
+    def embed(self, *, show_amount: bool = False) -> ipy.Embed:
+        embed = ipy.Embed(
+            title=self.name,
+            description=self.description,
+            color=ipy.Color(int(os.environ["BOT_COLOR"])),
+            timestamp=ipy.Timestamp.utcnow(),
+        )
+        if self.image:
+            embed.set_thumbnail(self.image)
+
+        if show_amount:
+            embed.add_field(
+                name="Amount Remaining",
+                value=self.amount if self.amount != -1 else "Unlimited",
+                inline=True,
+            )
+
+        return embed
+
     async def save(self) -> None:
         data = self.model_dump(exclude={"gacha_config", "players"})
         await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
@@ -248,6 +273,44 @@ class GachaPlayer(PrismaGachaPlayer):
     @property
     def user_id(self) -> int:
         return int(self.user_guild_id.split("-")[1])
+
+    def create_profile(self, user_display_name: str, names: "Names") -> list[ipy.Embed]:
+        str_builder = [
+            (
+                "Currency:"
+                f" {self.currency_amount} {names.currency_name(self.currency_amount)}"
+            ),
+            "\n**Items:**",
+        ]
+
+        if self.items:
+            str_builder.extend(
+                f"**{item.name}** - {short_desc(item.description)}"
+                for item in self.items
+            )
+        else:
+            str_builder.append("*No items.*")
+
+        if len(str_builder) <= 30:
+            return [
+                ipy.Embed(
+                    title=f"{user_display_name}'s Gacha Data",
+                    description="\n".join(str_builder),
+                    color=ipy.Color(int(os.environ["BOT_COLOR"])),
+                    timestamp=ipy.Timestamp.utcnow(),
+                )
+            ]
+
+        chunks = [str_builder[x : x + 30] for x in range(0, len(str_builder), 30)]
+        return [
+            ipy.Embed(
+                title=f"{user_display_name}'s Gacha Data",
+                description="\n".join(chunk),
+                color=ipy.Color(int(os.environ["BOT_COLOR"])),
+                timestamp=ipy.Timestamp.utcnow(),
+            )
+            for chunk in chunks
+        ]
 
     async def save(self) -> None:
         data = self.model_dump(

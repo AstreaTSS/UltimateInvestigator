@@ -14,6 +14,7 @@ import typing
 import interactions as ipy
 import tansy
 
+import common.fuzzy as fuzzy
 import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
@@ -91,14 +92,10 @@ class GachaCommands(utils.Extension):
             },
         )
 
-        embed = utils.make_embed(item.description, title=item.name)
-        if item.image:
-            embed.set_thumbnail(item.image)
-
-        await ctx.send(embed=embed)
+        await ctx.send(embed=item.embed())
 
     @gacha.subcommand(
-        "view",
+        "profile",
         sub_cmd_description="Shows your gacha currency and items.",
     )
     async def gacha_profile(self, ctx: utils.THIASlashContext) -> None:
@@ -116,42 +113,15 @@ class GachaCommands(utils.Extension):
         if player is None:
             raise ipy.errors.BadArgument("You have no data for gacha.")
 
-        items_list = [
-            f"**{item.name}** - {short_desc(item.description)}"
-            for item in (player.items or [])
-        ]
-        if len(items_list) > 30:
-            chunks = [items_list[x : x + 30] for x in range(0, len(items_list), 30)]
-            embeds = [
-                utils.make_embed(
-                    "\n".join(chunk),
-                    title=f"{ctx.author.display_name}'s Gacha Data",
-                )
-                for chunk in chunks
-            ]
-            embeds[0].description = (
-                "Currency:"
-                f" {player.currency_amount} {config.names.currency_name(player.currency_amount)}\n\n**Items:**{embeds[0].description}"
-            )
+        embeds = player.create_profile(ctx.author.display_name, config.names)
 
+        if len(embeds) > 1:
             pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot, *embeds, timeout=120
             )
             await pag.send(ctx, ephemeral=True)
         else:
-            items_list.insert(
-                0,
-                "Currency:"
-                f" {player.currency_amount} {config.names.currency_name(player.currency_amount)}\n\n**Items:**",
-            )
-
-            await ctx.send(
-                embed=utils.make_embed(
-                    "\n".join(items_list),
-                    title="Items",
-                ),
-                ephemeral=True,
-            )
+            await ctx.send(embedS=embeds, ephemeral=True)
 
     @gacha.subcommand(
         "give-currency",
@@ -209,8 +179,38 @@ class GachaCommands(utils.Extension):
             )
         )
 
+    @gacha.subcommand(
+        "view-item",
+        sub_cmd_description="Shows information about an item you have.",
+    )
+    async def gacha_user_view_item(
+        self,
+        ctx: utils.THIASlashContext,
+        name: str = tansy.Option("The name of the item to view.", autocomplete=True),
+    ) -> None:
+        item = await models.GachaItem.prisma().find_first(
+            where={
+                "guild_id": ctx.guild_id,
+                "name": name,
+                "players": {
+                    "some": {"user_guild_id": f"{ctx.guild_id}-{ctx.author.id}"}
+                },
+            },
+        )
+        if item is None:
+            raise ipy.errors.BadArgument(
+                "Item either does not exist or you do not have it."
+            )
+
+        await ctx.send(embed=item.embed())
+
+    @gacha_user_view_item.autocomplete("name")
+    async def _autocomplete_gacha_user_item(self, ctx: ipy.AutocompleteContext) -> None:
+        await fuzzy.autocomplete_gacha_user_item(ctx, **ctx.kwargs)
+
 
 def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     importlib.reload(help_tools)
+    importlib.reload(fuzzy)
     GachaCommands(bot)
