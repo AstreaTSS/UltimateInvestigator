@@ -176,16 +176,9 @@ class GachaManagement(utils.Extension):
     ) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
 
-        player = await models.GachaPlayer.prisma().upsert(
-            where={"guild_user_id": f"{ctx.guild_id}-{user.id}"},
-            data={
-                "create": {
-                    "guild_user_id": f"{ctx.guild_id}-{user.id}",
-                    "currency_amount": amount,
-                },
-                "update": {"currency_amount": {"increment": amount}},
-            },
-        )
+        player = await models.GachaPlayer.get_or_create(ctx.guild_id, user.id)
+        player.currency_amount += amount
+        await player.save()
 
         await ctx.send(
             embed=utils.make_embed(
@@ -208,16 +201,9 @@ class GachaManagement(utils.Extension):
     ) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
 
-        player = await models.GachaPlayer.prisma().upsert(
-            where={"guild_user_id": f"{ctx.guild_id}-{user.id}"},
-            data={
-                "create": {
-                    "guild_user_id": f"{ctx.guild_id}-{user.id}",
-                    "currency_amount": amount,
-                },
-                "update": {"currency_amount": {"decrement": amount}},
-            },
-        )
+        player = await models.GachaPlayer.get_or_create(ctx.guild_id, user.id)
+        player.currency_amount -= amount
+        await player.save()
 
         await ctx.send(
             embed=utils.make_embed(
@@ -240,7 +226,8 @@ class GachaManagement(utils.Extension):
     ) -> None:
         amount = await models.GachaPlayer.prisma().update_many(
             where={
-                "guild_user_id": f"{ctx.guild_id}-{user.id}",
+                "guild_id": ctx.guild_id,
+                "user_id": user.id,
                 "currency_amount": {"not": 0},
             },
             data={"currency_amount": 0},
@@ -270,7 +257,7 @@ class GachaManagement(utils.Extension):
             raise ipy.errors.BadArgument("The user has no data for gacha.")
 
         await models.GachaPlayer.prisma().update(
-            where={"guild_user_id": f"{ctx.guild_id}-{user.id}"},
+            where={"id": player.id},
             data={
                 "items": {
                     "disconnect": [{"id": item.id} for item in player.items or []]
@@ -294,9 +281,7 @@ class GachaManagement(utils.Extension):
         ),
     ) -> None:
         amount = await models.GachaPlayer.prisma().delete_many(
-            where={
-                "guild_user_id": f"{ctx.guild_id}-{user.id}",
-            },
+            where={"guild_id": ctx.guild_id, "user_id": ctx.author.id},
         )
 
         if not amount:
@@ -324,7 +309,7 @@ class GachaManagement(utils.Extension):
             )
 
         players_amount = await models.GachaPlayer.prisma().delete_many(
-            where={"guild_user_id": {"startswith": f"{ctx.guild_id}-"}}
+            where={"guild_id": ctx.guild_id}
         )
         items_amount = await models.GachaItem.prisma().delete_many(
             where={"guild_id": ctx.guild_id}
@@ -363,18 +348,29 @@ class GachaManagement(utils.Extension):
         if not ctx.guild.chunked:
             await ctx.guild.chunk()
 
+        existing_players = await models.GachaPlayer.prisma().find_many(
+            where={
+                "guild_id": ctx.guild_id,
+                "user_id": {"in": [m.id for m in actual_role.members]},
+            },
+        )
+        existing_players_set = {p.user_id for p in existing_players}
+
         async with self.bot.db.batch_() as batch:
             for member in actual_role.members:
-                batch.prismagachaplayer.upsert(
-                    where={"guild_user_id": f"{ctx.guild_id}-{member.id}"},
-                    data={
-                        "create": {
-                            "guild_user_id": f"{ctx.guild_id}-{member.id}",
+                if member.id not in existing_players_set:
+                    batch.prismagachaplayer.create(
+                        data={
+                            "guild_id": ctx.guild_id,
+                            "user_id": member.id,
                             "currency_amount": amount,
-                        },
-                        "update": {"currency_amount": {"increment": amount}},
-                    },
-                )
+                        }
+                    )
+                else:
+                    batch.prismagachaplayer.update_many(
+                        where={"guild_id": ctx.guild_id, "user_id": member.id},
+                        data={"currency_amount": {"increment": amount}},
+                    )
 
         await ctx.send(
             embed=utils.make_embed(
@@ -389,7 +385,7 @@ class GachaManagement(utils.Extension):
     async def gacha_view_all_currencies(self, ctx: utils.THIASlashContext) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
         players = await models.GachaPlayer.prisma().find_many(
-            where={"guild_user_id": {"startswith": f"{ctx.guild_id}-"}},
+            where={"guild_id": ctx.guild_id},
             order={"currency_amount": "desc"},
         )
 

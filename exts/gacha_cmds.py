@@ -76,7 +76,7 @@ class GachaCommands(utils.Extension):
             )
 
         await models.GachaPlayer.prisma().update(
-            where={"guild_user_id": player.guild_user_id},
+            where={"id": player.id},
             data={
                 "currency_amount": {"decrement": config.gacha.currency_cost},
                 "items": {
@@ -105,7 +105,12 @@ class GachaCommands(utils.Extension):
             ctx.guild_id, ctx.author.id, include={"items": True}
         )
         if player is None:
-            raise ipy.errors.BadArgument("You have no data for gacha.")
+            if not ctx.author.has_role(config.player_role):
+                raise ipy.errors.BadArgument("You have no data for gacha.")
+            player = await models.GachaPlayer.prisma().create(
+                data={"guild_id": ctx.guild_id, "user_id": ctx.author.id},
+                include={"items": True},
+            )
 
         embeds = player.create_profile(ctx.author.display_name, config.names)
 
@@ -115,7 +120,7 @@ class GachaCommands(utils.Extension):
             )
             await pag.send(ctx, ephemeral=True)
         else:
-            await ctx.send(embedS=embeds, ephemeral=True)
+            await ctx.send(embeds=embeds, ephemeral=True)
 
     @gacha.subcommand(
         "give-currency",
@@ -135,17 +140,12 @@ class GachaCommands(utils.Extension):
         if not config.player_role or not config.gacha.enabled:
             raise utils.CustomCheckFailure("Gacha is not enabled in this server.")
 
-        if not ctx.author.has_role(config.player_role):
-            raise utils.CustomCheckFailure("You do not have the Player role.")
-        if not recipient.has_role(config.player_role):
-            raise ipy.errors.BadArgument("The recipient does not have the Player role.")
-
         player = await models.GachaPlayer.get_or_none(ctx.guild_id, ctx.author.id)
         if player is None:
             if not ctx.author.has_role(config.player_role):
                 raise ipy.errors.BadArgument("You have no data for gacha.")
             player = await models.GachaPlayer.prisma().create(
-                data={"guild_user_id": f"{ctx.guild_id}-{ctx.author.id}"}
+                data={"guild_id": ctx.guild_id, "user_id": ctx.author.id}
             )
 
         if player.currency_amount < amount:
@@ -158,7 +158,7 @@ class GachaCommands(utils.Extension):
             if not recipient.has_role(config.player_role):
                 raise ipy.errors.BadArgument("The recipient has no data for gacha.")
             recipient_player = await models.GachaPlayer.prisma().create(
-                data={"guild_user_id": f"{ctx.guild_id}-{recipient.id}"}
+                data={"guild_id": ctx.guild_id, "user_id": ctx.author.id}
             )
 
         recipient_player.currency_amount += amount
@@ -187,7 +187,7 @@ class GachaCommands(utils.Extension):
                 "guild_id": ctx.guild_id,
                 "name": name,
                 "players": {
-                    "some": {"guild_user_id": f"{ctx.guild_id}-{ctx.author.id}"}
+                    "some": {"guild_id": ctx.guild_id, "user_id": ctx.author.id}
                 },
             },
         )
