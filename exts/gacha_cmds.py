@@ -20,12 +20,6 @@ import common.models as models
 import common.utils as utils
 
 
-def short_desc(description: str) -> str:
-    if len(description) > 25:
-        description = f"{description[:22]}..."
-    return description
-
-
 class GachaCommands(utils.Extension):
     def __init__(self, bot: utils.THIABase) -> None:
         self.name = "Gacha Commands"

@@ -19,12 +19,6 @@ import common.models as models
 import common.utils as utils
 
 
-def short_desc(description: str) -> str:
-    if len(description) > 25:
-        description = f"{description[:22]}..."
-    return description
-
-
 class GachaManagement(utils.Extension):
     def __init__(self, bot: utils.THIABase) -> None:
         self.name = "Gacha Management"
@@ -656,7 +650,7 @@ class GachaManagement(utils.Extension):
 
         items_list = [
             f"**{i.name}**{f' ({i.amount} remaining)' if i.amount else ''}:"
-            f" {short_desc(i.description)}"
+            f" {models.short_desc(i.description)}"
             for i in items
         ]
         if len(items_list) > 30:
