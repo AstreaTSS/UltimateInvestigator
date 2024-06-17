@@ -1,6 +1,4 @@
-FROM python:3.11-alpine
-
-RUN apk add --no-cache gcc bash musl-dev git libffi-dev npm
+FROM pypy:3.10
 
 WORKDIR /app
 
@@ -10,6 +8,6 @@ COPY . /app
 RUN git config --global --add safe.directory /app
 
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python -m prisma generate
+RUN pypy3 -m prisma generate
 
-CMD [ "python", "main.py" ]
+CMD [ "pypy3", "main.py" ]

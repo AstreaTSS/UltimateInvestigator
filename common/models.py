@@ -7,13 +7,13 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+import contextlib
 import os
 import re
-import typing
 from enum import IntEnum
 
 import interactions as ipy
-import orjson
+import typing_extensions as typing
 from prisma._async_http import Response
 from prisma.models import (
     PrismaBulletConfig,
@@ -465,12 +465,14 @@ WHERE
 )
 
 
-class FastResponse(Response):
-    async def json(self, **kwargs: typing.Any) -> typing.Any:
-        return orjson.loads(await self.original.aread(), **kwargs)
+with contextlib.suppress(ImportError):
+    import orjson  # type: ignore
 
+    class FastResponse(Response):
+        async def json(self, **kwargs: typing.Any) -> typing.Any:
+            return orjson.loads(await self.original.aread(), **kwargs)
 
-Response.json = FastResponse.json  # type: ignore
+    Response.json = FastResponse.json  # type: ignore
 
 
 Names.model_rebuild()

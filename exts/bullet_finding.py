@@ -10,10 +10,10 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import asyncio
 import collections
 import importlib
-import typing
 
 import interactions as ipy
 import tansy
+import typing_extensions as typing
 from interactions.client.mixins.send import SendMixin
 
 import common.models as models

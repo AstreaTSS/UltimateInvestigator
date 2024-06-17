@@ -8,10 +8,10 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
 import importlib
-import typing
 
 import interactions as ipy
 import tansy
+import typing_extensions as typing
 
 import common.fuzzy as fuzzy
 import common.help_tools as help_tools

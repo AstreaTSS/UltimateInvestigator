@@ -82,8 +82,8 @@ model PrismaGachaConfig {
   enabled       Boolean @default(false)
   currency_cost Int     @default(1)
 
-  items       PrismaGachaItem[]?
-  players     PrismaGachaPlayer[]?
+  items       PrismaGachaItem[]
+  players     PrismaGachaPlayer[]
   main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@map("thiagachaconfig")

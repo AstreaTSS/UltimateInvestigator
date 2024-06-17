@@ -7,10 +7,9 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
-import typing
-
 import interactions as ipy
 import rapidfuzz
+import typing_extensions as typing
 from rapidfuzz import process
 
 import common.models as models

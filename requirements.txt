@@ -1,14 +1,12 @@
-discord-py-interactions[speedup]==5.12.0
+discord-py-interactions==5.12.0
 tansy==0.9.1
-asyncpg==0.29.0
 prisma==0.13.1
 pydantic==2.7.3
 httpx[http2]==0.27.0
 aiodns==3.2.0
-Brotli==1.1.0
 humanize==4.9.0
 python-dotenv==1.0.1
-orjson==3.10.3
+orjson==3.10.3; implementation_name == "cpython"
 rapidfuzz==3.9.3
 sentry-sdk==2.5.1
 uvloop==0.19.0; platform_system == "Linux"

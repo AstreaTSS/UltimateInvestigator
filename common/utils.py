@@ -12,13 +12,13 @@ import functools
 import logging
 import os
 import traceback
-import typing
 from pathlib import Path
 
 import aiohttp
 import interactions as ipy
 import sentry_sdk
 import tansy
+import typing_extensions as typing
 from interactions.ext import prefixed_commands as prefixed
 from prisma.types import PrismaGuildConfigInclude
 from typing_extensions import TypeVar

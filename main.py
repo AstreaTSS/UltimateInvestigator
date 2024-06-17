@@ -13,11 +13,11 @@ import functools
 import logging
 import os
 import sys
-import typing
 from collections import defaultdict
 
 import interactions as ipy
 import sentry_sdk
+import typing_extensions as typing
 from interactions.ext import prefixed_commands as prefixed
 from prisma import Prisma
 
@@ -229,11 +229,17 @@ async def start() -> None:
 
 if __name__ == "__main__":
     loop_factory = None
+    uvloop = None
 
     with contextlib.suppress(ImportError):
         import uvloop  # type: ignore
 
         loop_factory = uvloop.new_event_loop
 
-    with asyncio.Runner(loop_factory=loop_factory) as runner:
-        runner.run(start())
+    if sys.version_info >= (3, 11):
+        with asyncio.Runner(loop_factory=loop_factory) as runner:
+            runner.run(start())
+    else:
+        if uvloop:
+            uvloop.install()
+        asyncio.run(start())

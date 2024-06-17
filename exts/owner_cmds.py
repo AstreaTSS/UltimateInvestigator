@@ -14,9 +14,9 @@ import io
 import platform
 import textwrap
 import traceback
-import typing
 
 import interactions as ipy
+import typing_extensions as typing
 from interactions.ext import paginators
 from interactions.ext import prefixed_commands as prefixed
 from interactions.ext.debug_extension.utils import debug_embed, get_cache_state

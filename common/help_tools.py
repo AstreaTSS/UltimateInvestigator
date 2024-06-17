@@ -11,11 +11,11 @@ import asyncio
 import contextlib
 import inspect
 import re
-import typing
 
 import attrs
 import discord_typings
 import interactions as ipy
+import typing_extensions as typing
 from interactions.ext import paginators
 from interactions.ext import prefixed_commands as prefixed
 from interactions.models.discord.emoji import process_emoji

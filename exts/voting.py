@@ -25,11 +25,11 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import importlib
 import os
-import typing
 
 import aiohttp
 import attrs
 import interactions as ipy
+import typing_extensions as typing
 
 import common.utils as utils
 
