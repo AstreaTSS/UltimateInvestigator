@@ -109,6 +109,7 @@ class GachaCommands(utils.Extension):
         "profile",
         sub_cmd_description="Shows your gacha currency and items.",
     )
+    @ipy.auto_defer(ephemeral=True)
     async def gacha_profile(self, ctx: utils.THIASlashContext) -> None:
         config = await ctx.fetch_config({"gacha": True, "names": True})
         if typing.TYPE_CHECKING:

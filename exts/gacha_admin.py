@@ -465,9 +465,9 @@ class GachaManagement(utils.Extension):
                 self.bot, *embeds, timeout=120
             )
             pag.show_callback_button = False
-            await pag.send(ctx, ephemeral=True)
+            await pag.send(ctx)
         else:
-            await ctx.send(embedS=embeds, ephemeral=True)
+            await ctx.send(embedS=embeds)
 
     @manage.subcommand(
         "add-item",
