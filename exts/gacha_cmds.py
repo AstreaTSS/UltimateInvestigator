@@ -134,6 +134,7 @@ class GachaCommands(utils.Extension):
             pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot, *embeds, timeout=120
             )
+            pag.show_callback_button = False
             await pag.send(ctx, ephemeral=True)
         else:
             await ctx.send(embeds=embeds, ephemeral=True)

@@ -206,14 +206,14 @@ class GachaManagement(utils.Extension):
     )
 
     @manage.subcommand(
-        "give-currency",
-        sub_cmd_description="Gives a user a certain amount of currency.",
+        "add-currency",
+        sub_cmd_description="Adds an amount of currency to a user.",
     )
     async def gacha_give_currency(
         self,
         ctx: utils.THIASlashContext,
-        user: ipy.Member = tansy.Option("The user to give currency to."),
-        amount: int = tansy.Option("The amount of currency to give."),
+        user: ipy.Member = tansy.Option("The user to add currency to."),
+        amount: int = tansy.Option("The amount of currency to add."),
     ) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
 
@@ -223,7 +223,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(
             embed=utils.make_embed(
-                f"Gave {amount} {names.currency_name(amount)} to {user.mention}."
+                f"Added {amount} {names.currency_name(amount)} to {user.mention}."
                 f" New total: {player.currency_amount}."
             )
         )
@@ -323,7 +323,7 @@ class GachaManagement(utils.Extension):
             raise ipy.errors.BadArgument("The user has no data to clear.")
 
         await ctx.send(
-            embed=utils.make_embed(f"Cleared/Removed data for {user.mention}.")
+            embed=utils.make_embed(f"Cleared/removed data for {user.mention}.")
         )
 
     @manage.subcommand(
@@ -356,15 +356,15 @@ class GachaManagement(utils.Extension):
         await ctx.send(embed=utils.make_embed("All gacha user and items data cleared."))
 
     @manage.subcommand(
-        "give-players",
+        "add-players-currency",
         sub_cmd_description=(
-            "Gives all users with the Player role a certain amount of currency."
+            "Adds a certain amount of currency to all users with the Player role."
         ),
     )
     async def gacha_give_all(
         self,
         ctx: utils.THIASlashContext,
-        amount: int = tansy.Option("The amount of currency to give."),
+        amount: int = tansy.Option("The amount of currency to add."),
     ) -> None:
         config = await ctx.fetch_config({"names": True})
         if typing.TYPE_CHECKING:
@@ -409,7 +409,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(
             embed=utils.make_embed(
-                f"Gave {amount} {config.names.currency_name(amount)} to all players."
+                f"Added {amount} {config.names.currency_name(amount)} to all players."
             )
         )
 
@@ -464,6 +464,7 @@ class GachaManagement(utils.Extension):
             pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot, *embeds, timeout=120
             )
+            pag.show_callback_button = False
             await pag.send(ctx, ephemeral=True)
         else:
             await ctx.send(embedS=embeds, ephemeral=True)
@@ -670,7 +671,7 @@ class GachaManagement(utils.Extension):
         await ctx.send(embed=item.embed(show_amount=True))
 
     @manage.subcommand(
-        "view-items", sub_cmd_description="Views all gacha items for this server."
+        "view-all-items", sub_cmd_description="Views all gacha items for this server."
     )
     async def gacha_view_items(
         self,
@@ -701,6 +702,7 @@ class GachaManagement(utils.Extension):
             pag = help_tools.HelpPaginator.create_from_embeds(
                 self.bot, *embeds, timeout=120
             )
+            pag.show_callback_button = False
             await pag.send(ctx)
         else:
             await ctx.send(

@@ -37,7 +37,7 @@ class CustomTimeout(paginators.Timeout):
                 await asyncio.wait_for(
                     self.ping.wait(), timeout=self.paginator.timeout_interval
                 )
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 if self.paginator.message:
                     with contextlib.suppress(ipy.errors.HTTPException):
                         await self.paginator.message.edit(
@@ -203,7 +203,7 @@ class HelpPaginator(paginators.Paginator):
             "components": [c.to_dict() for c in self.create_components()],
         }
 
-    async def send(self, ctx: ipy.BaseContext) -> ipy.Message:
+    async def send(self, ctx: ipy.BaseContext, **kwargs: typing.Any) -> ipy.Message:
         """
         Send this paginator.
 
@@ -218,7 +218,7 @@ class HelpPaginator(paginators.Paginator):
         if isinstance(ctx, ipy.InteractionContext):
             self.context = ctx
 
-        self._message = await ctx.send(**self.to_dict())
+        self._message = await ctx.send(**self.to_dict(), **kwargs)
         self._author_id = ctx.author.id
 
         if self.timeout_interval > 1:
@@ -227,7 +227,9 @@ class HelpPaginator(paginators.Paginator):
 
         return self._message
 
-    async def reply(self, ctx: prefixed.PrefixedContext) -> ipy.Message:
+    async def reply(
+        self, ctx: prefixed.PrefixedContext, **kwargs: typing.Any
+    ) -> ipy.Message:
         """
         Reply this paginator to ctx.
 
@@ -236,7 +238,7 @@ class HelpPaginator(paginators.Paginator):
         Returns:
             The resulting message
         """
-        self._message = await ctx.reply(**self.to_dict())
+        self._message = await ctx.reply(**self.to_dict(), **kwargs)
         self._author_id = ctx.author.id
 
         if self.timeout_interval > 1:
