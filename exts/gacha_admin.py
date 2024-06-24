@@ -258,19 +258,13 @@ class GachaManagement(utils.Extension):
         ),
     ) -> None:
         player = await models.GachaPlayer.get_or_none(
-            ctx.guild_id, user.id, include={"items": True}
+            ctx.guild_id,
+            user.id,
         )
         if player is None:
             raise ipy.errors.BadArgument("The user has no data for gacha.")
 
-        await models.GachaPlayer.prisma().update(
-            where={"id": player.id},
-            data={
-                "items": {
-                    "disconnect": [{"id": item.id} for item in player.items or []]
-                }
-            },
-        )
+        await models.ItemToPlayer.prisma().delete_many(where={"player_id": player.id})
         await ctx.send(embed=utils.make_embed(f"Reset items for {user.mention}."))
 
     @manage.subcommand(
@@ -424,7 +418,7 @@ class GachaManagement(utils.Extension):
     ) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
         player = await models.GachaPlayer.get_or_none(
-            ctx.guild_id, user.id, include={"items": True}
+            ctx.guild_id, user.id, include={"items": {"include": {"item": True}}}
         )
 
         if player is None:
@@ -498,9 +492,7 @@ class GachaManagement(utils.Extension):
             raise ipy.errors.BadArgument("An item with that name already exists.")
 
         try:
-            ipy.get_logger().info(str_amount)
             amount = int(str_amount)
-            ipy.get_logger().info(amount)
             if amount < -1:
                 raise ValueError
         except ValueError:

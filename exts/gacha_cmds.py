@@ -69,24 +69,23 @@ class GachaCommands(utils.Extension):
             order={"id": "asc"},
         )
 
-        if item.amount != -1:
-            item.amount -= 1
-            await models.GachaItem.prisma().update(
-                data={"amount": item.amount}, where={"id": item.id}
-            )
+        async with self.bot.db.batch_() as batch:
+            if item.amount != -1:
+                item.amount -= 1
+                batch.prismagachaitem.update(
+                    data={"amount": item.amount}, where={"id": item.id}
+                )
 
-        await models.GachaPlayer.prisma().update(
-            where={"id": player.id},
-            data={
-                "currency_amount": {"decrement": config.gacha.currency_cost},
-                "items": {
-                    "set": (
-                        [{"id": i.id} for i in player.items] if player.items else []
-                    ),  # TODO: is this needed?
-                    "connect": [{"id": item.id}],
-                },
-            },
-        )
+            batch.prismagachaplayer.update(
+                data={"currency_amount": {"decrement": config.gacha.currency_cost}},
+                where={"id": player.id},
+            )
+            batch.prismaitemtoplayer.create(
+                data={
+                    "item": {"connect": {"id": item.id}},
+                    "player": {"connect": {"id": player.id}},
+                }
+            )
 
         await ctx.send(embed=item.embed())
 
@@ -104,14 +103,13 @@ class GachaCommands(utils.Extension):
             raise utils.CustomCheckFailure("Gacha is not enabled in this server.")
 
         player = await models.GachaPlayer.get_or_none(
-            ctx.guild_id, ctx.author.id, include={"items": True}
+            ctx.guild_id, ctx.author.id, include={"items": {"include": {"item": True}}}
         )
         if player is None:
             if not ctx.author.has_role(config.player_role):
                 raise ipy.errors.BadArgument("You have no data for gacha.")
             player = await models.GachaPlayer.prisma().create(
                 data={"guild_id": ctx.guild_id, "user_id": ctx.author.id},
-                include={"items": True},
             )
 
         embeds = player.create_profile(ctx.author.display_name, config.names)
@@ -189,7 +187,11 @@ class GachaCommands(utils.Extension):
                 "guild_id": ctx.guild_id,
                 "name": name,
                 "players": {
-                    "some": {"guild_id": ctx.guild_id, "user_id": ctx.author.id}
+                    "some": {
+                        "player": {
+                            "is": {"guild_id": ctx.guild_id, "user_id": ctx.author.id}
+                        }
+                    }
                 },
             },
         )

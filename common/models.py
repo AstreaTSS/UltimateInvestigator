@@ -21,6 +21,7 @@ from prisma.models import (
     PrismaGachaItem,
     PrismaGachaPlayer,
     PrismaGuildConfig,
+    PrismaItemToPlayer,
     PrismaNames,
     PrismaTruthBullet,
 )
@@ -201,8 +202,17 @@ class BulletConfig(GetMethodsMixin, PrismaBulletConfig):
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
+class ItemToPlayer(PrismaItemToPlayer):
+    item: typing.Optional["GachaItem"] = None
+    player: typing.Optional["GachaPlayer"] = None
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"item", "player"})
+        await self.prisma().update(where={"id": self.id}, data=data)
+
+
 class GachaItem(PrismaGachaItem):
-    players: "typing.Optional[list[GachaPlayer]]" = None
+    players: "typing.Optional[list[ItemToPlayer]]" = None
     gacha_config: "typing.Optional[GachaConfig]" = None
 
     def embed(self, *, show_amount: bool = False) -> ipy.Embed:
@@ -230,7 +240,7 @@ class GachaItem(PrismaGachaItem):
 
 
 class GachaPlayer(PrismaGachaPlayer):
-    items: "typing.Optional[list[GachaItem]]" = None
+    items: "typing.Optional[list[ItemToPlayer]]" = None
     gacha_config: "typing.Optional[GachaConfig]" = None
 
     @classmethod
@@ -277,10 +287,10 @@ class GachaPlayer(PrismaGachaPlayer):
             "\n**Items:**",
         ]
 
-        if self.items:
+        if self.items and all(entry.item for entry in self.items):
             str_builder.extend(
-                f"**{item.name}** - {short_desc(item.description)}"
-                for item in self.items
+                f"**{entry.item.name}** - {short_desc(entry.item.description)}"
+                for entry in self.items
             )
         else:
             str_builder.append("*No items.*")
@@ -393,6 +403,7 @@ class GuildConfigMixin:
 
 class GuildConfig(GuildConfigMixin, PrismaGuildConfig):
     bullets: typing.Optional[BulletConfig] = None
+    gacha: typing.Optional[GachaConfig] = None
     names: typing.Optional[Names] = None
 
 
@@ -470,3 +481,4 @@ BulletConfig.model_rebuild()
 GachaItem.model_rebuild()
 GachaConfig.model_rebuild()
 GachaPlayer.model_rebuild()
+ItemToPlayer.model_rebuild()

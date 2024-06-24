@@ -54,7 +54,7 @@ model PrismaGachaItem {
   rarity      Rarity  @default(COMMON)
   amount      Int     @default(-1)
 
-  players      PrismaGachaPlayer[]
+  players      PrismaItemToPlayer[]
   gacha_config PrismaGachaConfig?   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@index([guild_id])
@@ -69,12 +69,21 @@ model PrismaGachaPlayer {
   user_id     BigInt
   currency_amount Int    @default(0)
 
-  items PrismaGachaItem[]
+  items PrismaItemToPlayer[]
   gacha_config PrismaGachaConfig?   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@index([guild_id])
   @@index([guild_id, user_id])
   @@map("thiagachaplayers")
+}
+
+model PrismaItemToPlayer {
+  id          Int     @id @default(autoincrement())
+  item        PrismaGachaItem  @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  item_id     Int
+  player      PrismaGachaPlayer @relation(fields: [player_id], references: [id], onDelete: Cascade)
+  player_id   Int
+  @@map("thiagachaitemtoplayer")
 }
 
 model PrismaGachaConfig {
