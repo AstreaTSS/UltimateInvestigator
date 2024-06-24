@@ -199,7 +199,7 @@ class GachaManagement(utils.Extension):
         )
 
     manage = tansy.SlashCommand(
-        name="gacha-management",
+        name="gacha-manage",
         description="Handles management of gacha mechanics.",
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,

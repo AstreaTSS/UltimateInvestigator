@@ -40,7 +40,7 @@ class BulletCMDs(utils.Extension):
         self.bot: utils.THIABase = bot
 
     config = tansy.SlashCommand(
-        name="bullet-management",
+        name="bullet-manage",
         description="Handles management of Truth Bullets.",
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
