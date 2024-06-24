@@ -186,6 +186,10 @@ bot = PYTHIA(
     slash_context=utils.THIASlashContext,
     modal_context=utils.THIAModalContext,
     auto_defer=ipy.AutoDefer(enabled=True, time_until_defer=0),
+    message_cache=ipy.utils.TTLCache(30, 50, 150),
+    channel_cache=ipy.utils.TTLCache(600, 50, 250),
+    scheduled_events_cache=ipy.utils.NullCache(),
+    voice_state_cache=ipy.utils.NullCache(),
     logger=logger,
 )
 bot.init_load = True
