@@ -50,6 +50,10 @@ class GachaManagement(utils.Extension):
             ),
             f"Gacha status: {utils.toggle_friendly_str(config.gacha.enabled)}",
             f"Gacha use cost: {config.gacha.currency_cost}",
+            (
+                "Draw duplicates:"
+                f" {utils.toggle_friendly_str(config.gacha.draw_duplicates)}"
+            ),
         ]
 
         embed = utils.make_embed(
@@ -161,6 +165,36 @@ class GachaManagement(utils.Extension):
         await ctx.send(
             embed=utils.make_embed(
                 f"Updated! The cost of a single gacha use is now {cost}."
+            )
+        )
+
+    @config.subcommand(
+        "draw-duplicates",
+        sub_cmd_description=(
+            "Toggles the ability for players draw items they already own."
+        ),
+    )
+    async def gacha_draw_duplicates(
+        self,
+        ctx: utils.THIASlashContext,
+        _toggle: str = tansy.Option(
+            "Should players be allowed to draw items they already own?",
+            name="toggle",
+            choices=[
+                ipy.SlashCommandChoice("yes", "yes"),
+                ipy.SlashCommandChoice("no", "no"),
+            ],
+        ),
+    ) -> None:
+        toggle = _toggle == "yes"
+
+        await models.GachaConfig.prisma().update(
+            data={"draw_duplicates": toggle}, where={"guild_id": ctx.guild_id}
+        )
+
+        await ctx.send(
+            embed=utils.make_embed(
+                f"Drawing duplicates turned {utils.toggle_friendly_str(toggle)}!"
             )
         )
 

@@ -59,17 +59,17 @@ model PrismaGachaItem {
 
   @@index([guild_id])
   @@index([name])
-  @@index([rarity])
+  @@index([amount])
   @@map("thiagachaitems")
 }
 
 model PrismaGachaPlayer {
-  id          Int     @id @default(autoincrement())
-  guild_id    BigInt
-  user_id     BigInt
+  id              Int    @id @default(autoincrement())
+  guild_id        BigInt
+  user_id         BigInt
   currency_amount Int    @default(0)
 
-  items PrismaItemToPlayer[]
+  items        PrismaItemToPlayer[]
   gacha_config PrismaGachaConfig?   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@index([guild_id])
@@ -78,22 +78,24 @@ model PrismaGachaPlayer {
 }
 
 model PrismaItemToPlayer {
-  id          Int     @id @default(autoincrement())
-  item        PrismaGachaItem  @relation(fields: [item_id], references: [id], onDelete: Cascade)
-  item_id     Int
-  player      PrismaGachaPlayer @relation(fields: [player_id], references: [id], onDelete: Cascade)
-  player_id   Int
+  id        Int               @id @default(autoincrement())
+  item      PrismaGachaItem   @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  item_id   Int
+  player    PrismaGachaPlayer @relation(fields: [player_id], references: [id], onDelete: Cascade)
+  player_id Int
+
   @@map("thiagachaitemtoplayer")
 }
 
 model PrismaGachaConfig {
-  guild_id      BigInt  @id
-  enabled       Boolean @default(false)
-  currency_cost Int     @default(1)
+  guild_id        BigInt  @id
+  enabled         Boolean @default(false)
+  currency_cost   Int     @default(1)
+  draw_duplicates Boolean @default(true)
 
   items       PrismaGachaItem[]
   players     PrismaGachaPlayer[]
-  main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+  main_config PrismaGuildConfig?  @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
   @@map("thiagachaconfig")
 }

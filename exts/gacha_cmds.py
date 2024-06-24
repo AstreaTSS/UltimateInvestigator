@@ -19,6 +19,9 @@ import common.help_tools as help_tools
 import common.models as models
 import common.utils as utils
 
+if typing.TYPE_CHECKING:
+    from prisma.types import PrismaGachaItemWhereInput
+
 
 class GachaCommands(utils.Extension):
     def __init__(self, bot: utils.THIABase) -> None:
@@ -54,18 +57,31 @@ class GachaCommands(utils.Extension):
 
         if player.currency_amount < config.gacha.currency_cost:
             raise utils.CustomCheckFailure(
-                "You do not have enough currency to draw from the gacha."
+                f"You do not have enough {config.names.plural_currency_name} to draw"
+                " from the gacha. You need at least"
+                f" {config.gacha.currency_cost} {config.names.currency_name(config.gacha.currency_cost)} to"
+                " do so."
             )
 
+        where: PrismaGachaItemWhereInput = {}
+        if config.gacha.draw_duplicates:
+            where = {"guild_id": ctx.guild.id, "amount": {"not": 0}}
+        else:
+            where = {
+                "guild_id": ctx.guild.id,
+                "amount": {"not": 0},
+                "players": {"none": {"player_id": player.id}},
+            }
+
         item_count = await models.GachaItem.prisma().count(
-            where={"guild_id": ctx.guild.id, "amount": {"not": 0}},
+            where=where,
         )
         if item_count == 0:
-            raise utils.CustomCheckFailure("No items to draw.")
+            raise utils.CustomCheckFailure("There are no items available to draw.")
 
         item = await models.GachaItem.prisma().find_first_or_raise(
             skip=random.randint(0, item_count - 1),  # noqa: S311
-            where={"guild_id": ctx.guild.id, "amount": {"not": 0}},
+            where=where,
             order={"id": "asc"},
         )
 
