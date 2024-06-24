@@ -429,7 +429,7 @@ class GachaManagement(utils.Extension):
 
         str_build: list[str] = []
         str_build.extend(
-            f"{player.user_id} -"
+            f"<@{player.user_id}> -"
             f" {player.currency_amount} {names.currency_name(player.currency_amount)}"
             for player in players
         )
