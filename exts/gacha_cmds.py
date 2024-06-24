@@ -58,10 +58,10 @@ class GachaCommands(utils.Extension):
             )
 
         item_count = await models.GachaItem.prisma().count(
-            where={"guild_id": ctx.guild.id}
+            where={"guild_id": ctx.guild.id, "amount": {"not": 0}},
         )
         if item_count == 0:
-            raise utils.CustomCheckFailure("No items in the gacha.")
+            raise utils.CustomCheckFailure("No items to draw.")
 
         item = await models.GachaItem.prisma().find_first_or_raise(
             skip=random.randint(0, item_count - 1),  # noqa: S311
@@ -80,7 +80,9 @@ class GachaCommands(utils.Extension):
             data={
                 "currency_amount": {"decrement": config.gacha.currency_cost},
                 "items": {
-                    # "set": [{"id": i.id} for i in player.items] if player.items else [], TODO: is this needed?
+                    "set": (
+                        [{"id": i.id} for i in player.items] if player.items else []
+                    ),  # TODO: is this needed?
                     "connect": [{"id": item.id}],
                 },
             },

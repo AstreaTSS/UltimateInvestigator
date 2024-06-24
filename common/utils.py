@@ -328,3 +328,7 @@ class THIAInteractionContext(THIAContextMixin[ConfigT], ipy.InteractionContext):
 
 class THIASlashContext(THIAContextMixin[ConfigT], ipy.SlashContext):
     pass
+
+
+class THIAPrefixedContext(THIAContextMixin[ConfigT], prefixed.PrefixedContext):
+    pass

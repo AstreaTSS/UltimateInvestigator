@@ -25,8 +25,8 @@ class GachaManagement(utils.Extension):
         self.bot: utils.THIABase = bot
 
     config = tansy.SlashCommand(
-        name="gacha-management",
-        description="Handles management of gacha mechanics.",
+        name="gacha-config",
+        description="Handles configuration of gacha mechanics.",
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
         dm_permission=False,
     )
@@ -49,7 +49,7 @@ class GachaManagement(utils.Extension):
                 f" {f'<@&{config.player_role}>' if config.player_role else 'N/A'}"
             ),
             f"Gacha status: {utils.toggle_friendly_str(config.gacha.enabled)}",
-            f"Gacha use cost:{config.gacha.currency_cost}",
+            f"Gacha use cost: {config.gacha.currency_cost}",
         ]
 
         embed = utils.make_embed(
@@ -164,7 +164,14 @@ class GachaManagement(utils.Extension):
             )
         )
 
-    @config.subcommand(
+    manage = tansy.SlashCommand(
+        name="gacha-management",
+        description="Handles management of gacha mechanics.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+
+    @manage.subcommand(
         "give-currency",
         sub_cmd_description="Gives a user a certain amount of currency.",
     )
@@ -187,7 +194,7 @@ class GachaManagement(utils.Extension):
             )
         )
 
-    @config.subcommand(
+    @manage.subcommand(
         "remove-currency",
         sub_cmd_description="Removes a certain amount of currency from a user.",
     )
@@ -212,7 +219,7 @@ class GachaManagement(utils.Extension):
             )
         )
 
-    @config.subcommand(
+    @manage.subcommand(
         "reset-currency",
         sub_cmd_description="Resets currency amount for a user.",
     )
@@ -238,7 +245,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(embed=utils.make_embed(f"Reset currency for {user.mention}."))
 
-    @config.subcommand(
+    @manage.subcommand(
         "reset-items",
         sub_cmd_description="Resets items for a user.",
     )
@@ -266,7 +273,7 @@ class GachaManagement(utils.Extension):
         )
         await ctx.send(embed=utils.make_embed(f"Reset items for {user.mention}."))
 
-    @config.subcommand(
+    @manage.subcommand(
         "clear-user",
         sub_cmd_description=(
             "Clears/removes gacha data, including currency and items, for a user."
@@ -291,7 +298,7 @@ class GachaManagement(utils.Extension):
             embed=utils.make_embed(f"Cleared/Removed data for {user.mention}.")
         )
 
-    @config.subcommand(
+    @manage.subcommand(
         "clear-everything",
         sub_cmd_description="Clears ALL gacha user and items data. Use with caution!",
     )
@@ -320,7 +327,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(embed=utils.make_embed("All gacha user and items data cleared."))
 
-    @config.subcommand(
+    @manage.subcommand(
         "give-players",
         sub_cmd_description=(
             "Gives all users with the Player role a certain amount of currency."
@@ -378,7 +385,7 @@ class GachaManagement(utils.Extension):
             )
         )
 
-    @config.subcommand(
+    @manage.subcommand(
         "view-all-currencies",
         sub_cmd_description="Views the currency amount of all users.",
     )
@@ -403,7 +410,7 @@ class GachaManagement(utils.Extension):
             embed=utils.make_embed("\n".join(str_build), title="Gacha Currency Amounts")
         )
 
-    @config.subcommand(
+    @manage.subcommand(
         "user-profile",
         sub_cmd_description="Views the currency amount and items of a user.",
     )
@@ -433,8 +440,8 @@ class GachaManagement(utils.Extension):
         else:
             await ctx.send(embedS=embeds, ephemeral=True)
 
-    @config.subcommand(
-        "item-add",
+    @manage.subcommand(
+        "add-item",
         sub_cmd_description="Adds an item to the gacha.",
     )
     @ipy.auto_defer(enabled=False)
@@ -456,7 +463,7 @@ class GachaManagement(utils.Extension):
                 max_length=1024,
             ),
             ipy.InputText(
-                label="Item Amount",
+                label="Item Quantity",
                 style=ipy.TextStyles.SHORT,
                 custom_id="item_amount",
                 max_length=10,
@@ -479,8 +486,8 @@ class GachaManagement(utils.Extension):
     async def add_gacha_item_modal(self, ctx: utils.THIAModalContext) -> None:
         name: str = ctx.kwargs["item_name"]
         description: str = ctx.kwargs["item_description"]
-        str_amount: str = ctx.kwargs.get("item_amount", "-1")
-        image: typing.Optional[str] = ctx.kwargs.get("item_image")
+        str_amount: str = ctx.kwargs.get("item_amount", "-1").strip() or "-1"
+        image: typing.Optional[str] = ctx.kwargs.get("item_image", "").strip() or None
 
         if (
             await models.GachaItem.prisma().count(
@@ -491,11 +498,15 @@ class GachaManagement(utils.Extension):
             raise ipy.errors.BadArgument("An item with that name already exists.")
 
         try:
+            ipy.get_logger().info(str_amount)
             amount = int(str_amount)
+            ipy.get_logger().info(amount)
             if amount < -1:
                 raise ValueError
         except ValueError:
-            raise ipy.errors.BadArgument("Amount must be a positive number.") from None
+            raise ipy.errors.BadArgument(
+                "Quantity must be a positive number."
+            ) from None
 
         await models.GachaItem.prisma().create(
             data={
@@ -509,8 +520,8 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(embed=utils.make_embed(f"Added item {name} to the gacha."))
 
-    @config.subcommand(
-        "item-edit",
+    @manage.subcommand(
+        "edit-item",
         sub_cmd_description="Edits an item in the gacha.",
     )
     @ipy.auto_defer(enabled=False)
@@ -541,7 +552,7 @@ class GachaManagement(utils.Extension):
                 value=item.description,
             ),
             ipy.InputText(
-                label="Item Amount",
+                label="Item Quantity",
                 style=ipy.TextStyles.SHORT,
                 custom_id="item_amount",
                 max_length=10,
@@ -572,8 +583,8 @@ class GachaManagement(utils.Extension):
         item_id = int(ctx.custom_id.split("-")[1])
         name: str = ctx.kwargs["item_name"]
         description: str = ctx.kwargs["item_description"]
-        str_amount: str = ctx.kwargs.get("item_amount", "-1")
-        image: typing.Optional[str] = ctx.kwargs.get("item_image")
+        str_amount: str = ctx.kwargs.get("item_amount", "-1").strip() or "-1"
+        image: typing.Optional[str] = ctx.kwargs.get("item_image", "").strip() or None
 
         if not await models.GachaItem.prisma().count(where={"id": item_id}):
             raise ipy.errors.BadArgument("The item no longer exists.")
@@ -583,7 +594,9 @@ class GachaManagement(utils.Extension):
             if amount < -1:
                 raise ValueError
         except ValueError:
-            raise ipy.errors.BadArgument("Amount must be a positive number.") from None
+            raise ipy.errors.BadArgument(
+                "Quantity must be a positive number."
+            ) from None
 
         await models.GachaItem.prisma().update(
             data={
@@ -595,10 +608,10 @@ class GachaManagement(utils.Extension):
             where={"id": item_id},
         )
 
-        await ctx.send(embed=utils.make_embed(f"Edit item {name}."))
+        await ctx.send(embed=utils.make_embed(f"Edited item {name}."))
 
-    @config.subcommand(
-        "item-remove",
+    @manage.subcommand(
+        "remove-item",
         sub_cmd_description="Removes an item from the gacha.",
     )
     async def gacha_item_remove(
@@ -614,7 +627,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(f"Deleted {name}.")
 
-    @config.subcommand(
+    @manage.subcommand(
         "view-single-item", sub_cmd_description="Views an item in the gacha."
     )
     async def gacha_view_single_item(
@@ -630,7 +643,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(embed=item.embed(show_amount=True))
 
-    @config.subcommand(
+    @manage.subcommand(
         "view-items", sub_cmd_description="Views all gacha items for this server."
     )
     async def gacha_view_items(
@@ -645,7 +658,7 @@ class GachaManagement(utils.Extension):
             raise utils.CustomCheckFailure("This server has no items to show.")
 
         items_list = [
-            f"**{i.name}**{f' ({i.amount} remaining)' if i.amount else ''}:"
+            f"**{i.name}**{f' ({i.amount} remaining)' if i.amount != -1 else ''}:"
             f" {models.short_desc(i.description)}"
             for i in items
         ]
@@ -678,7 +691,7 @@ class GachaManagement(utils.Extension):
         self,
         ctx: ipy.AutocompleteContext,
     ) -> None:
-        return await fuzzy.autocomplete_bullets(ctx, **ctx.kwargs)
+        return await fuzzy.autocomplete_gacha_item(ctx, **ctx.kwargs)
 
 
 def setup(bot: utils.THIABase) -> None:

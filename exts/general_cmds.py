@@ -120,31 +120,29 @@ class OtherCMDs(utils.Extension):
 
     @tansy.slash_command("about", description="Gives information about the bot.")
     async def about(self, ctx: utils.THIASlashContext) -> None:
-        msg_list = [
+        msg_list: list[str] = [
             (
                 '> "Hello. I am PYTHIA, the Ultimate Robotic Assistant. I look forward'
                 ' to assisting you in whatever tasks you may have."'
             ),
             (
-                (
-                    "PYTHIA is a Discord bot meant to assist with Danganronpa/Killing"
-                    " Game RPs. Currently, it automates parts of investigating that"
-                    " would otherwise take time and energy to make it easier to run"
-                    " RPs. More specifically, it allows for staff to define 'key"
-                    " phrases'/triggers that players can later activate through the"
-                    " bot."
-                ),
-                (
-                    "The bot is planned to increase in scope, adding featues like a"
-                    " gacha system in the future."
-                ),
+                "PYTHIA is a Discord bot meant to assist with Danganronpa/Killing"
+                " Game RPs. Currently, it automates parts of investigating that"
+                " would otherwise take time and energy to make it easier to run"
+                " RPs. More specifically, it allows for staff to define 'key"
+                " phrases'/triggers that players can later activate through the"
+                " bot."
+            ),
+            (
+                "The bot is planned to increase in scope, adding featues like a"
+                " gacha system in the future."
             ),
         ]
 
         about_embed = ipy.Embed(
             title="About",
             color=self.bot.color,
-            description="\n".join(msg_list),
+            description="\n\n".join(msg_list),
         )
         about_embed.set_thumbnail(
             ctx.guild.me.display_avatar.url

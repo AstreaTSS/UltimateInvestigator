@@ -27,7 +27,6 @@ from prisma.models import (
 from prisma.types import (
     PrismaGachaPlayerInclude,
     PrismaGuildConfigInclude,
-    PrismaGuildConfigUpdateInput,
 )
 from pydantic import field_serializer, field_validator
 
@@ -218,7 +217,7 @@ class GachaItem(PrismaGachaItem):
 
         if show_amount:
             embed.add_field(
-                name="Amount Remaining",
+                name="Quantity Remaining",
                 value=self.amount if self.amount != -1 else "Unlimited",
                 inline=True,
             )
@@ -232,6 +231,7 @@ class GachaItem(PrismaGachaItem):
 
 class GachaPlayer(PrismaGachaPlayer):
     items: "typing.Optional[list[GachaItem]]" = None
+    gacha_config: "typing.Optional[GachaConfig]" = None
 
     @classmethod
     async def get(
@@ -307,20 +307,17 @@ class GachaPlayer(PrismaGachaPlayer):
         ]
 
     async def save(self) -> None:
-        data = self.model_dump(
-            exclude={
-                "items",
-            }
-        )
-        await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
+        data = self.model_dump(exclude={"items", "gacha_config", "id", "guild_id"})
+        await self.prisma().update(where={"id": self.id}, data=data)
 
 
 class GachaConfig(GetMethodsMixin, PrismaGachaConfig):
     items: "typing.Optional[list[GachaItem]]" = None
+    players: "typing.Optional[list[GachaPlayer]]" = None
     main_config: "typing.Optional[GuildConfig]" = None
 
     async def save(self) -> None:
-        data = self.model_dump(exclude={"main_config"})
+        data = self.model_dump(exclude={"items", "players", "main_config"})
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
@@ -338,29 +335,22 @@ class GuildConfigMixin:
     async def _fill_in_include(
         self, include: PrismaGuildConfigInclude | None
     ) -> typing.Self:
-        config = self
-
         if not include:
             return self
 
-        add_data: PrismaGuildConfigUpdateInput = {}
-
         for entry in include:
             if entry == "names" and not getattr(self, "names", True):
-                add_data["names"] = {"create": {"guild_id": self.guild_id}}
+                self.names = await Names.prisma().create(
+                    data={"guild_id": self.guild_id}
+                )
             if entry == "bullets" and not getattr(self, "bullets", True):
-                add_data["bullets"] = {"create": {"guild_id": self.guild_id}}
+                self.bullets = await BulletConfig.prisma().create(
+                    data={"guild_id": self.guild_id}
+                )
             if entry == "gacha" and not getattr(self, "gacha", True):
-                add_data["gacha"] = {"create": {"guild_id": self.guild_id}}
-
-        if add_data:
-            config = await self.prisma().update(
-                where={"guild_id": self.guild_id},
-                data=add_data,
-                include=include,
-            )
-            if typing.TYPE_CHECKING:
-                assert config is not None
+                self.gacha = await GachaConfig.prisma().create(
+                    data={"guild_id": self.guild_id}
+                )
 
         return self
 

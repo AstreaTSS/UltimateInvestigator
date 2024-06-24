@@ -194,7 +194,7 @@ bot.mini_commands_per_scope = {}
 bot.background_tasks = set()
 bot.msg_enabled_bullets_guilds = set()
 bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # #723fb0 or 7487408
-prefixed.setup(bot)
+prefixed.setup(bot, prefixed_context=utils.THIAPrefixedContext)
 
 
 async def start() -> None:
