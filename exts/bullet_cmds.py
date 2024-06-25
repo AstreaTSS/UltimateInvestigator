@@ -82,7 +82,7 @@ class BulletCMDs(utils.Extension):
                     "This server has Truth Bullets that all have been found, likely"
                     " from a previous investigation. If you want to start fresh with"
                     " completely new Truth Bullets, you can clear the current ones"
-                    f" with {self.bot.mention_command('clear-bullets')}.",
+                    f" with {self.bot.mention_command('bullet-manage clear')}.",
                     color=ipy.RoleColors.YELLOW,
                 )
             )
