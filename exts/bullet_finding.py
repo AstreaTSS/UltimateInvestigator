@@ -16,8 +16,18 @@ import tansy
 import typing_extensions as typing
 from interactions.client.mixins.send import SendMixin
 
+import common.fuzzy as fuzzy
 import common.models as models
 import common.utils as utils
+
+
+async def player_check(ctx: utils.THIASlashContext) -> bool:
+    config = await ctx.fetch_config(include={"bullets": True, "names": True})
+
+    if not config.player_role or not ctx.author.has_role(config.player_role):
+        raise utils.CustomCheckFailure("Cannot investigate without the Player role.")
+
+    return True
 
 
 class BulletFinding(utils.Extension):
@@ -221,6 +231,7 @@ class BulletFinding(utils.Extension):
         ),
     )
     @ipy.auto_defer(enabled=False)
+    @ipy.check(player_check)
     async def investigate(
         self,
         ctx: utils.THIASlashContext,
@@ -235,11 +246,6 @@ class BulletFinding(utils.Extension):
             self.bot.msg_enabled_bullets_guilds.discard(int(ctx.guild_id))
             raise utils.CustomCheckFailure(
                 f"{config.names.plural_bullet} are not enabled in this server."
-            )
-
-        if not config.player_role or not ctx.author.has_role(config.player_role):
-            raise utils.CustomCheckFailure(
-                "Cannot investigate without the Player role."
             )
 
         truth_bullet = await models.TruthBullet.find_exact(ctx.channel_id, trigger)
@@ -279,7 +285,37 @@ class BulletFinding(utils.Extension):
         await truth_bullet.save()
         await self.check_for_finish(ctx.guild, bullet_chan, config)
 
+    config = tansy.SlashCommand(
+        name="bullet-manage",
+        description="Handles management of Truth Bullets.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+
+    @config.subcommand(
+        "manual-trigger",
+        sub_cmd_description="Manually trigger a Truth Bullet in the current channel.",
+    )
+    @ipy.auto_defer(enabled=False)
+    async def manual_trigger(
+        self,
+        ctx: utils.THIASlashContext,
+        trigger: str = tansy.Option(
+            "The trigger of the Truth Bullet to manually trigger.", autocomplete=True
+        ),
+    ) -> None:
+        await self.investigate.call_with_binding(
+            self.investigate.callback, ctx, trigger
+        )
+
+    @manual_trigger.autocomplete("trigger")
+    async def _bullet_trigger_autocomplete(self, ctx: ipy.AutocompleteContext) -> None:
+        return await fuzzy.autocomplete_bullets(
+            ctx, **ctx.kwargs, channel=str(ctx.channel_id), only_not_found=True
+        )
+
 
 def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
+    importlib.reload(fuzzy)
     BulletFinding(bot)

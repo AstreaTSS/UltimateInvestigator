@@ -450,7 +450,7 @@ class BulletCMDs(utils.Extension):
         await ctx.send(embed=utils.make_embed("Truth Bullet un-found!"))
 
     @config.subcommand(
-        "override",
+        "override-finder",
         sub_cmd_description=(
             "Overrides who found a Truth Bullet with the person specified."
         ),

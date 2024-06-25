@@ -412,7 +412,7 @@ FIND_TRUTH_BULLET_STR: typing.Final[str] = (
 SELECT
     {', '.join(TruthBullet.model_fields)}
 FROM
-    thiabulletconfig
+    thiatruthbullets
 WHERE
     channel_id = $1
     AND found = false
@@ -432,7 +432,7 @@ VALIDATE_TRUTH_BULLET_STR: typing.Final[str] = (
 SELECT
     1
 FROM
-    thiabulletconfig
+    thiatruthbullets
 WHERE
     channel_id = $1
     AND (
@@ -451,7 +451,7 @@ FIND_TRUTH_BULLET_EXACT_STR: typing.Final[str] = (
 SELECT
     {', '.join(TruthBullet.model_fields)}
 FROM
-    thiabulletconfig
+    thiatruthbullets
 WHERE
     channel_id = $1
     AND (

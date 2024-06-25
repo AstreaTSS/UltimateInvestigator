@@ -14,6 +14,9 @@ from rapidfuzz import process
 
 import common.models as models
 
+if typing.TYPE_CHECKING:
+    from prisma.types import PrismaTruthBulletWhereInput
+
 T = typing.TypeVar("T")
 
 
@@ -53,14 +56,18 @@ async def autocomplete_bullets(
     ctx: ipy.AutocompleteContext,
     trigger: str,
     channel: typing.Optional[str] = None,
+    only_not_found: bool = False,
     **kwargs: typing.Any,  # noqa: ARG001
 ) -> None:
     if not channel:
         return await ctx.send([])
 
-    channel_bullets = await models.TruthBullet.prisma().find_many(
-        where={"channel_id": int(channel)}
-    )
+    where: PrismaTruthBulletWhereInput = {"channel_id": int(channel)}
+
+    if only_not_found:
+        where["found"] = False
+
+    channel_bullets = await models.TruthBullet.prisma().find_many(where=where)
 
     if not trigger:
         return await ctx.send([{"name": b.trigger, "value": b.trigger} for b in channel_bullets][:25])  # type: ignore
