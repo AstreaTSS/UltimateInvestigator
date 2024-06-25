@@ -36,8 +36,8 @@ class GachaCommands(utils.Extension):
     )
 
     @gacha.subcommand(
-        "draw",
-        sub_cmd_description="Draws an item from the gacha.",
+        "roll",
+        sub_cmd_description="Rolls for an item in the gacha.",
     )
     async def gacha_draw(self, ctx: utils.THIASlashContext) -> None:
         config = await ctx.fetch_config({"gacha": True, "names": True})
@@ -57,8 +57,8 @@ class GachaCommands(utils.Extension):
 
         if player.currency_amount < config.gacha.currency_cost:
             raise utils.CustomCheckFailure(
-                f"You do not have enough {config.names.plural_currency_name} to draw"
-                " from the gacha. You need at least"
+                f"You do not have enough {config.names.plural_currency_name} to roll"
+                " the gacha. You need at least"
                 f" {config.gacha.currency_cost} {config.names.currency_name(config.gacha.currency_cost)} to"
                 " do so."
             )
@@ -77,7 +77,7 @@ class GachaCommands(utils.Extension):
             where=where,
         )
         if item_count == 0:
-            raise utils.CustomCheckFailure("There are no items available to draw.")
+            raise utils.CustomCheckFailure("There are no items available to roll.")
 
         item = await models.GachaItem.prisma().find_first_or_raise(
             skip=random.randint(0, item_count - 1),  # noqa: S311
@@ -187,7 +187,7 @@ class GachaCommands(utils.Extension):
         await ctx.send(
             embed=utils.make_embed(
                 f"Gave {amount} {config.names.currency_name(amount)} to"
-                f" {recipient.display_name}."
+                f" {recipient.mention}. New balance: {player.currency_amount}."
             )
         )
 

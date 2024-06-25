@@ -7,6 +7,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+import asyncio
 import importlib
 
 import interactions as ipy
@@ -106,7 +107,7 @@ class GachaManagement(utils.Extension):
         )
 
     @config.subcommand(
-        "name",
+        "names",
         sub_cmd_description="Sets the name of the currency to be used.",
     )
     @ipy.auto_defer(enabled=False)
@@ -291,14 +292,13 @@ class GachaManagement(utils.Extension):
             type=ipy.User,
         ),
     ) -> None:
-        player = await models.GachaPlayer.get_or_none(
-            ctx.guild_id,
-            user.id,
+        amount = await models.ItemToPlayer.prisma().delete_many(
+            where={"player": {"is": {"user_id": user.id, "guild_id": ctx.guild_id}}}
         )
-        if player is None:
-            raise ipy.errors.BadArgument("The user has no data for gacha.")
 
-        await models.ItemToPlayer.prisma().delete_many(where={"player_id": player.id})
+        if not amount:
+            raise ipy.errors.BadArgument("The user has no items to reset.")
+
         await ctx.send(embed=utils.make_embed(f"Reset items for {user.mention}."))
 
     @manage.subcommand(
@@ -316,7 +316,7 @@ class GachaManagement(utils.Extension):
         ),
     ) -> None:
         amount = await models.GachaPlayer.prisma().delete_many(
-            where={"guild_id": ctx.guild_id, "user_id": ctx.author.id},
+            where={"guild_id": ctx.guild_id, "user_id": user.id},
         )
 
         if not amount:
@@ -356,7 +356,7 @@ class GachaManagement(utils.Extension):
         await ctx.send(embed=utils.make_embed("All gacha user and items data cleared."))
 
     @manage.subcommand(
-        "add-players-currency",
+        "add-currency-players",
         sub_cmd_description=(
             "Adds a certain amount of currency to all users with the Player role."
         ),
@@ -382,17 +382,20 @@ class GachaManagement(utils.Extension):
 
         if not ctx.guild.chunked:
             await ctx.guild.chunk()
+            await asyncio.sleep(1)  # sometimes, it needs the wiggle room
+
+        members = actual_role.members.copy()
 
         existing_players = await models.GachaPlayer.prisma().find_many(
             where={
                 "guild_id": ctx.guild_id,
-                "user_id": {"in": [m.id for m in actual_role.members]},
+                "user_id": {"in": [m.id for m in members]},
             },
         )
         existing_players_set = {p.user_id for p in existing_players}
 
         async with self.bot.db.batch_() as batch:
-            for member in actual_role.members:
+            for member in members:
                 if member.id not in existing_players_set:
                     batch.prismagachaplayer.create(
                         data={
@@ -414,8 +417,8 @@ class GachaManagement(utils.Extension):
         )
 
     @manage.subcommand(
-        "view-all-currencies",
-        sub_cmd_description="Views the currency amount of all users.",
+        "list-currency-amounts",
+        sub_cmd_description="Lists the currency amounts of all users.",
     )
     async def gacha_view_all_currencies(self, ctx: utils.THIASlashContext) -> None:
         names = await models.Names.get_or_create(ctx.guild_id)
@@ -467,7 +470,7 @@ class GachaManagement(utils.Extension):
             pag.show_callback_button = False
             await pag.send(ctx)
         else:
-            await ctx.send(embedS=embeds)
+            await ctx.send(embeds=embeds)
 
     @manage.subcommand(
         "add-item",
@@ -654,9 +657,7 @@ class GachaManagement(utils.Extension):
 
         await ctx.send(f"Deleted {name}.")
 
-    @manage.subcommand(
-        "view-single-item", sub_cmd_description="Views an item in the gacha."
-    )
+    @manage.subcommand("view-item", sub_cmd_description="Views an item in the gacha.")
     async def gacha_view_single_item(
         self,
         ctx: utils.THIASlashContext,
@@ -671,7 +672,7 @@ class GachaManagement(utils.Extension):
         await ctx.send(embed=item.embed(show_amount=True))
 
     @manage.subcommand(
-        "view-all-items", sub_cmd_description="Views all gacha items for this server."
+        "list-items", sub_cmd_description="Lists all gacha items for this server."
     )
     async def gacha_view_items(
         self,
