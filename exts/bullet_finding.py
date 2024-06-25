@@ -254,6 +254,11 @@ class BulletFinding(utils.Extension):
                 f"No {config.names.singular_bullet} found with this trigger."
             )
 
+        if truth_bullet.found:
+            raise utils.CustomCheckFailure(
+                f"This {config.names.singular_bullet} has already been found."
+            )
+
         await ctx.defer(ephemeral=truth_bullet.hidden)
 
         truth_bullet.found = True
