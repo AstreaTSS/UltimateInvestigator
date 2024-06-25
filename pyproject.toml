@@ -24,7 +24,7 @@ exclude = [
     "migrations"
 ]
 
-target-version = "py311"
+target-version = "py310"
 fix = true
 
 [tool.ruff.lint]

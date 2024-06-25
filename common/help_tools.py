@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,11 +11,11 @@ import asyncio
 import contextlib
 import inspect
 import re
-import typing
 
 import attrs
 import discord_typings
 import interactions as ipy
+import typing_extensions as typing
 from interactions.ext import paginators
 from interactions.ext import prefixed_commands as prefixed
 from interactions.models.discord.emoji import process_emoji
@@ -37,7 +37,7 @@ class CustomTimeout(paginators.Timeout):
                 await asyncio.wait_for(
                     self.ping.wait(), timeout=self.paginator.timeout_interval
                 )
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 if self.paginator.message:
                     with contextlib.suppress(ipy.errors.HTTPException):
                         await self.paginator.message.edit(
@@ -203,7 +203,7 @@ class HelpPaginator(paginators.Paginator):
             "components": [c.to_dict() for c in self.create_components()],
         }
 
-    async def send(self, ctx: ipy.BaseContext) -> ipy.Message:
+    async def send(self, ctx: ipy.BaseContext, **kwargs: typing.Any) -> ipy.Message:
         """
         Send this paginator.
 
@@ -218,7 +218,7 @@ class HelpPaginator(paginators.Paginator):
         if isinstance(ctx, ipy.InteractionContext):
             self.context = ctx
 
-        self._message = await ctx.send(**self.to_dict())
+        self._message = await ctx.send(**self.to_dict(), **kwargs)
         self._author_id = ctx.author.id
 
         if self.timeout_interval > 1:
@@ -227,7 +227,9 @@ class HelpPaginator(paginators.Paginator):
 
         return self._message
 
-    async def reply(self, ctx: prefixed.PrefixedContext) -> ipy.Message:
+    async def reply(
+        self, ctx: prefixed.PrefixedContext, **kwargs: typing.Any
+    ) -> ipy.Message:
         """
         Reply this paginator to ctx.
 
@@ -236,7 +238,7 @@ class HelpPaginator(paginators.Paginator):
         Returns:
             The resulting message
         """
-        self._message = await ctx.reply(**self.to_dict())
+        self._message = await ctx.reply(**self.to_dict(), **kwargs)
         self._author_id = ctx.author.id
 
         if self.timeout_interval > 1:
@@ -376,7 +378,7 @@ class GuildApplicationCommandPermissionData(typing.TypedDict):
     permissions: list[discord_typings.ApplicationCommandPermissionsData]
 
 
-async def process_bulk_slash_perms(bot: utils.UIBase, guild_id: int) -> None:
+async def process_bulk_slash_perms(bot: utils.THIABase, guild_id: int) -> None:
     perms: list[GuildApplicationCommandPermissionData] = (
         await bot.http.batch_get_application_command_permissions(  # type: ignore
             int(bot.app.id), guild_id
@@ -513,7 +515,7 @@ class MiniCommand:
         self.subcommands.add(cmd)
 
 
-def get_commands_for_scope_by_ids(bot: utils.UIBase, guild_id: int) -> dict:
+def get_commands_for_scope_by_ids(bot: utils.THIABase, guild_id: int) -> dict:
     scope_cmds = bot.interactions_by_scope.get(
         ipy.const.GLOBAL_SCOPE, {}
     ) | bot.interactions_by_scope.get(guild_id, {})
@@ -525,7 +527,7 @@ def get_commands_for_scope_by_ids(bot: utils.UIBase, guild_id: int) -> dict:
 
 
 def get_mini_commands_for_scope(
-    bot: utils.UIBase, guild_id: int
+    bot: utils.THIABase, guild_id: int
 ) -> dict[str, MiniCommand]:
     if (
         mini_cmds := bot.mini_commands_per_scope.get(guild_id, ipy.MISSING)

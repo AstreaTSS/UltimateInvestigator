@@ -1,19 +1,21 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
-import typing
-
 import interactions as ipy
 import rapidfuzz
+import typing_extensions as typing
 from rapidfuzz import process
 
 import common.models as models
+
+if typing.TYPE_CHECKING:
+    from prisma.types import PrismaTruthBulletWhereInput
 
 T = typing.TypeVar("T")
 
@@ -54,14 +56,18 @@ async def autocomplete_bullets(
     ctx: ipy.AutocompleteContext,
     trigger: str,
     channel: typing.Optional[str] = None,
+    only_not_found: bool = False,
     **kwargs: typing.Any,  # noqa: ARG001
 ) -> None:
     if not channel:
         return await ctx.send([])
 
-    channel_bullets = await models.TruthBullet.prisma().find_many(
-        where={"channel_id": int(channel)}
-    )
+    where: PrismaTruthBulletWhereInput = {"channel_id": int(channel)}
+
+    if only_not_found:
+        where["found"] = False
+
+    channel_bullets = await models.TruthBullet.prisma().find_many(where=where)
 
     if not trigger:
         return await ctx.send([{"name": b.trigger, "value": b.trigger} for b in channel_bullets][:25])  # type: ignore
@@ -103,3 +109,72 @@ async def autocomplete_aliases(
         score_cutoff=0.6,
     )
     return await ctx.send([{"name": a[0], "value": a[0]} for a in query][:25])  # type: ignore
+
+
+def get_gacha_item_name(item: models.GachaItem) -> str:
+    return item.name.lower() if isinstance(item, models.GachaItem) else item
+
+
+async def autocomplete_gacha_item(
+    ctx: ipy.AutocompleteContext,
+    name: str,
+    **kwargs: typing.Any,  # noqa: ARG001
+) -> None:
+    if not ctx.guild_id:
+        return await ctx.send([])
+
+    gacha_items = await models.GachaItem.prisma().find_many(
+        where={"guild_id": ctx.guild_id}
+    )
+    if not gacha_items:
+        return await ctx.send([])
+
+    if not name:
+        return await ctx.send(
+            [{"name": g.name, "value": g.name} for g in gacha_items][:25]
+        )
+
+    query: list[list[models.GachaItem]] = extract_from_list(
+        argument=name.lower(),
+        list_of_items=gacha_items,
+        processors=[get_gacha_item_name],
+        score_cutoff=0.6,
+    )
+    return await ctx.send([{"name": g[0].name, "value": g[0].name} for g in query][:25])  # type: ignore
+
+
+async def autocomplete_gacha_user_item(
+    ctx: ipy.AutocompleteContext,
+    name: str,
+    **kwargs: typing.Any,  # noqa: ARG001
+) -> None:
+    if not ctx.guild_id:
+        return await ctx.send([])
+
+    gacha_items = await models.GachaItem.prisma().find_many(
+        where={
+            "guild_id": ctx.guild_id,
+            "players": {
+                "some": {
+                    "player": {
+                        "is": {"guild_id": ctx.guild_id, "user_id": ctx.author.id}
+                    }
+                }
+            },
+        }
+    )
+    if not gacha_items:
+        return await ctx.send([])
+
+    if not name:
+        return await ctx.send(
+            [{"name": g.name, "value": g.name} for g in gacha_items][:25]
+        )
+
+    query: list[list[models.GachaItem]] = extract_from_list(
+        argument=name.lower(),
+        list_of_items=gacha_items,
+        processors=[get_gacha_item_name],
+        score_cutoff=0.6,
+    )
+    return await ctx.send([{"name": g[0].name, "value": g[0].name} for g in query][:25])  # type: ignore

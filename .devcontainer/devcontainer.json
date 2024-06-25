@@ -22,7 +22,8 @@
 			"extensions": [
 				"ms-python.python",
 				"charliermarsh.ruff",
-				"ms-python.black-formatter"
+				"ms-python.black-formatter",
+				"Prisma.prisma"
 			]
 		}
 	},
@@ -31,13 +32,15 @@
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [5432],
 
 	// Uncomment the next line if you want start specific services in your Docker Compose config.
 	// "runServices": [],
 
 	// Uncomment the next line if you want to keep your containers running after VS Code shuts down.
 	// "shutdownAction": "none",
+
+	"initializeCommand": "cp .devcontainer/.containerenv .env",
 
 	// Uncomment the next line to run commands after the container is created.
 	"postCreateCommand": "git config --global --add safe.directory /workspaces/UltimateInvestigator;pip install pre-commit;pre-commit install"

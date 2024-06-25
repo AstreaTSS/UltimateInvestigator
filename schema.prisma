@@ -11,29 +11,104 @@ generator client {
 }
 
 model PrismaNames {
-  id                           Int    @id @default(autoincrement())
+  guild_id                     BigInt @id
   singular_bullet              String @default("Truth Bullet")
   plural_bullet                String @default("Truth Bullets")
   singular_truth_bullet_finder String @default("{{bullet_name}} Finder")
   plural_truth_bullet_finder   String @default("{{bullet_name}} Finders")
   best_bullet_finder           String @default("Best {{bullet_finder}}")
+  singular_currency_name       String @default("Coin")
+  plural_currency_name         String @default("Coins")
 
-  config PrismaConfig?
+  main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
 
-  @@map("uinames")
+  @@map("thianames")
 }
 
-model PrismaConfig {
-  guild_id                BigInt       @id @default(autoincrement())
+model PrismaBulletConfig {
+  guild_id                BigInt  @id
   bullet_chan_id          BigInt?
   best_bullet_finder_role BigInt?
-  player_role             BigInt?
-  bullets_enabled         Boolean      @default(false)
-  investigation_type      Int          @default(1) @db.SmallInt
-  names                   PrismaNames? @relation(fields: [names_id], references: [id], onDelete: Cascade)
-  names_id                Int?         @unique
+  bullets_enabled         Boolean @default(false)
+  investigation_type      Int     @default(1) @db.SmallInt
 
-  @@map("uinewconfig")
+  main_config PrismaGuildConfig? @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+
+  @@map("thiabulletconfig")
+}
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  SUPER_RARE
+  LEGENDARY
+}
+
+model PrismaGachaItem {
+  id          Int     @id @default(autoincrement())
+  guild_id    BigInt
+  name        String
+  description String
+  image       String?
+  rarity      Rarity  @default(COMMON)
+  amount      Int     @default(-1)
+
+  players      PrismaItemToPlayer[]
+  gacha_config PrismaGachaConfig?   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+
+  @@index([guild_id])
+  @@index([name])
+  @@index([amount])
+  @@map("thiagachaitems")
+}
+
+model PrismaGachaPlayer {
+  id              Int    @id @default(autoincrement())
+  guild_id        BigInt
+  user_id         BigInt
+  currency_amount Int    @default(0)
+
+  items        PrismaItemToPlayer[]
+  gacha_config PrismaGachaConfig?   @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+
+  @@index([guild_id])
+  @@index([guild_id, user_id])
+  @@map("thiagachaplayers")
+}
+
+model PrismaItemToPlayer {
+  id        Int               @id @default(autoincrement())
+  item      PrismaGachaItem   @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  item_id   Int
+  player    PrismaGachaPlayer @relation(fields: [player_id], references: [id], onDelete: Cascade)
+  player_id Int
+
+  @@map("thiagachaitemtoplayer")
+}
+
+model PrismaGachaConfig {
+  guild_id        BigInt  @id
+  enabled         Boolean @default(false)
+  currency_cost   Int     @default(1)
+  draw_duplicates Boolean @default(true)
+
+  items       PrismaGachaItem[]
+  players     PrismaGachaPlayer[]
+  main_config PrismaGuildConfig?  @relation(fields: [guild_id], references: [guild_id], onDelete: Cascade)
+
+  @@map("thiagachaconfig")
+}
+
+model PrismaGuildConfig {
+  guild_id    BigInt  @id
+  player_role BigInt?
+
+  names   PrismaNames?
+  bullets PrismaBulletConfig?
+  gacha   PrismaGachaConfig?
+
+  @@map("thiaguildconfig")
 }
 
 model PrismaTruthBullet {
@@ -47,6 +122,8 @@ model PrismaTruthBullet {
   finder      BigInt?
   hidden      Boolean  @default(false)
 
-  @@index([trigger, channel_id, guild_id, found], map: "idx_uinewtruthb_name_37580d")
-  @@map("uinewtruthbullets")
+  @@index([channel_id])
+  @@index([guild_id])
+  @@index([found])
+  @@map("thiatruthbullets")
 }

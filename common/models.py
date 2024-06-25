@@ -1,21 +1,34 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
+import contextlib
 import os
 import re
-import typing
 from enum import IntEnum
 
 import interactions as ipy
-import orjson
+import typing_extensions as typing
 from prisma._async_http import Response
-from prisma.models import PrismaConfig, PrismaNames, PrismaTruthBullet
+from prisma.models import (
+    PrismaBulletConfig,
+    PrismaGachaConfig,
+    PrismaGachaItem,
+    PrismaGachaPlayer,
+    PrismaGuildConfig,
+    PrismaItemToPlayer,
+    PrismaNames,
+    PrismaTruthBullet,
+)
+from prisma.types import (
+    PrismaGachaPlayerInclude,
+    PrismaGuildConfigInclude,
+)
 from pydantic import field_serializer, field_validator
 
 
@@ -41,6 +54,12 @@ TEMPLATE_MARKDOWN = re.compile(r"({{(.*)}})")
 
 def code_template(value: str) -> str:
     return TEMPLATE_MARKDOWN.sub(r"`\1`", value)
+
+
+def short_desc(description: str, length: int = 25) -> str:
+    if len(description) > length:
+        description = f"{description[:length-3]}..."
+    return description
 
 
 class TruthBullet(PrismaTruthBullet):
@@ -133,10 +152,31 @@ class TruthBullet(PrismaTruthBullet):
         await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
 
 
-class Names(PrismaNames):
+class GetMethodsMixin:
+    @classmethod
+    async def get(cls, guild_id: int) -> typing.Self:
+        return await cls.prisma().find_unique_or_raise(where={"guild_id": guild_id})
+
+    @classmethod
+    async def get_or_none(cls, guild_id: int) -> typing.Optional[typing.Self]:
+        return await cls.prisma().find_unique(where={"guild_id": guild_id})
+
+    @classmethod
+    async def get_or_create(cls, guild_id: int) -> typing.Self:
+        return await cls.get_or_none(guild_id) or await cls.prisma().create(
+            data={"guild_id": guild_id}
+        )
+
+
+class Names(GetMethodsMixin, PrismaNames):
+    main_config: "typing.Optional[GuildConfig]" = None
+
+    def currency_name(self, amount: int) -> str:
+        return self.singular_currency_name if amount == 1 else self.plural_currency_name
+
     async def save(self) -> None:
-        data = self.model_dump(exclude={"config"})
-        await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
+        data = self.model_dump(exclude={"main_config"})
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
 
 class InvestigationType(IntEnum):
@@ -144,13 +184,9 @@ class InvestigationType(IntEnum):
     COMMAND_ONLY = 2
 
 
-class Config(PrismaConfig):
+class BulletConfig(GetMethodsMixin, PrismaBulletConfig):
     investigation_type: InvestigationType
-
-    if typing.TYPE_CHECKING:
-        names: Names
-    else:
-        names: typing.Optional[Names] = None
+    main_config: "typing.Optional[GuildConfig]" = None
 
     @field_validator("investigation_type", mode="after")
     @classmethod
@@ -161,41 +197,214 @@ class Config(PrismaConfig):
     def _transform_investigation_type_into_int(self, value: InvestigationType) -> int:
         return value.value
 
-    @classmethod
-    async def get(cls, guild_id: int) -> typing.Self:
-        config = await cls.prisma().find_unique_or_raise(
-            where={"guild_id": guild_id}, include={"names": True}
-        )
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"main_config"})
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
 
-        if not config.names:
-            config = await cls.prisma().update(
-                where={"guild_id": config.guild_id},
-                data={"names": {"create": {}}},
-                include={"names": True},
-            )
-            if typing.TYPE_CHECKING:
-                assert config is not None
 
-        return config
-
-    @classmethod
-    async def get_or_none(cls, guild_id: int) -> typing.Optional[typing.Self]:
-        config = await cls.prisma().find_unique(
-            where={"guild_id": guild_id}, include={"names": True}
-        )
-
-        if config and not config.names:
-            config = await cls.prisma().update(
-                where={"guild_id": config.guild_id},
-                data={"names": {"create": {}}},
-                include={"names": True},
-            )
-
-        return config
+class ItemToPlayer(PrismaItemToPlayer):
+    item: typing.Optional["GachaItem"] = None
+    player: typing.Optional["GachaPlayer"] = None
 
     async def save(self) -> None:
-        data = self.model_dump(exclude={"names", "names_id"})
+        data = self.model_dump(exclude={"item", "player"})
+        await self.prisma().update(where={"id": self.id}, data=data)
+
+
+class GachaItem(PrismaGachaItem):
+    players: "typing.Optional[list[ItemToPlayer]]" = None
+    gacha_config: "typing.Optional[GachaConfig]" = None
+
+    def embed(self, *, show_amount: bool = False) -> ipy.Embed:
+        embed = ipy.Embed(
+            title=self.name,
+            description=self.description,
+            color=ipy.Color(int(os.environ["BOT_COLOR"])),
+            timestamp=ipy.Timestamp.utcnow(),
+        )
+        if self.image:
+            embed.set_thumbnail(self.image)
+
+        if show_amount:
+            embed.add_field(
+                name="Quantity Remaining",
+                value=self.amount if self.amount != -1 else "Unlimited",
+                inline=True,
+            )
+
+        return embed
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"gacha_config", "players"})
+        await self.prisma().update(where={"id": self.id}, data=data)  # type: ignore
+
+
+class GachaPlayer(PrismaGachaPlayer):
+    items: "typing.Optional[list[ItemToPlayer]]" = None
+    gacha_config: "typing.Optional[GachaConfig]" = None
+
+    @classmethod
+    async def get(
+        cls,
+        guild_id: int,
+        user_id: int,
+        include: PrismaGachaPlayerInclude | None = None,
+    ) -> typing.Self:
+        return await cls.prisma().find_first_or_raise(
+            where={"guild_id": guild_id, "user_id": user_id}, include=include
+        )
+
+    @classmethod
+    async def get_or_none(
+        cls,
+        guild_id: int,
+        user_id: int,
+        include: PrismaGachaPlayerInclude | None = None,
+    ) -> typing.Optional[typing.Self]:
+        return await cls.prisma().find_first(
+            where={"guild_id": guild_id, "user_id": user_id}, include=include
+        )
+
+    @classmethod
+    async def get_or_create(
+        cls,
+        guild_id: int,
+        user_id: int,
+        include: PrismaGachaPlayerInclude | None = None,
+    ) -> typing.Self:
+        return await cls.get_or_none(
+            guild_id, user_id, include=include
+        ) or await cls.prisma().create(
+            data={"guild_id": guild_id, "user_id": user_id}, include=include
+        )
+
+    def create_profile(self, user_display_name: str, names: "Names") -> list[ipy.Embed]:
+        str_builder = [
+            (
+                "Currency:"
+                f" {self.currency_amount} {names.currency_name(self.currency_amount)}"
+            ),
+            "\n**Items:**",
+        ]
+
+        if self.items and all(entry.item for entry in self.items):
+            str_builder.extend(
+                f"**{entry.item.name}** - {short_desc(entry.item.description)}"
+                for entry in self.items
+            )
+        else:
+            str_builder.append("*No items.*")
+
+        if len(str_builder) <= 30:
+            return [
+                ipy.Embed(
+                    title=f"{user_display_name}'s Gacha Data",
+                    description="\n".join(str_builder),
+                    color=ipy.Color(int(os.environ["BOT_COLOR"])),
+                    timestamp=ipy.Timestamp.utcnow(),
+                )
+            ]
+
+        chunks = [str_builder[x : x + 30] for x in range(0, len(str_builder), 30)]
+        return [
+            ipy.Embed(
+                title=f"{user_display_name}'s Gacha Data",
+                description="\n".join(chunk),
+                color=ipy.Color(int(os.environ["BOT_COLOR"])),
+                timestamp=ipy.Timestamp.utcnow(),
+            )
+            for chunk in chunks
+        ]
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"items", "gacha_config", "id", "guild_id"})
+        await self.prisma().update(where={"id": self.id}, data=data)
+
+
+class GachaConfig(GetMethodsMixin, PrismaGachaConfig):
+    items: "typing.Optional[list[GachaItem]]" = None
+    players: "typing.Optional[list[GachaPlayer]]" = None
+    main_config: "typing.Optional[GuildConfig]" = None
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"items", "players", "main_config"})
         await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
+
+
+class GuildConfigMixin:
+    guild_id: ipy.Snowflake
+
+    if typing.TYPE_CHECKING:
+        from prisma import actions
+
+        @classmethod
+        def prisma(cls) -> actions.PrismaGuildConfigActions[typing.Self]: ...
+
+        model_dump: typing.Callable[..., dict[str, typing.Any]]
+
+    async def _fill_in_include(
+        self, include: PrismaGuildConfigInclude | None
+    ) -> typing.Self:
+        if not include:
+            return self
+
+        for entry in include:
+            if entry == "names" and not getattr(self, "names", True):
+                self.names = await Names.prisma().create(
+                    data={"guild_id": self.guild_id}
+                )
+            if entry == "bullets" and not getattr(self, "bullets", True):
+                self.bullets = await BulletConfig.prisma().create(
+                    data={"guild_id": self.guild_id}
+                )
+            if entry == "gacha" and not getattr(self, "gacha", True):
+                self.gacha = await GachaConfig.prisma().create(
+                    data={"guild_id": self.guild_id}
+                )
+
+        return self
+
+    @classmethod
+    async def get(
+        cls, guild_id: int, include: PrismaGuildConfigInclude | None = None
+    ) -> typing.Self:
+        config = await cls.prisma().find_unique_or_raise(
+            where={"guild_id": guild_id},
+            include=include,
+        )
+        return await config._fill_in_include(include)
+
+    @classmethod
+    async def get_or_none(
+        cls, guild_id: int, include: PrismaGuildConfigInclude | None = None
+    ) -> typing.Optional[typing.Self]:
+        config = await cls.prisma().find_unique(
+            where={"guild_id": guild_id}, include=include
+        )
+
+        if config:
+            config = await config._fill_in_include(include)
+
+        return config
+
+    @classmethod
+    async def get_or_create(
+        cls, guild_id: int, include: PrismaGuildConfigInclude | None = None
+    ) -> typing.Self:
+        config = await cls.prisma().find_unique(
+            where={"guild_id": guild_id}, include=include
+        ) or await cls.prisma().create(data={"guild_id": guild_id})
+        return await config._fill_in_include(include)
+
+    async def save(self) -> None:
+        data = self.model_dump(exclude={"names", "names_id", "bullets", "guild_id"})
+        await self.prisma().update(where={"guild_id": self.guild_id}, data=data)  # type: ignore
+
+
+class GuildConfig(GuildConfigMixin, PrismaGuildConfig):
+    bullets: typing.Optional[BulletConfig] = None
+    gacha: typing.Optional[GachaConfig] = None
+    names: typing.Optional[Names] = None
 
 
 FIND_TRUTH_BULLET_STR: typing.Final[str] = (
@@ -203,7 +412,7 @@ FIND_TRUTH_BULLET_STR: typing.Final[str] = (
 SELECT
     {', '.join(TruthBullet.model_fields)}
 FROM
-    uinewtruthbullets
+    thiatruthbullets
 WHERE
     channel_id = $1
     AND found = false
@@ -223,7 +432,7 @@ VALIDATE_TRUTH_BULLET_STR: typing.Final[str] = (
 SELECT
     1
 FROM
-    uinewtruthbullets
+    thiatruthbullets
 WHERE
     channel_id = $1
     AND (
@@ -242,7 +451,7 @@ FIND_TRUTH_BULLET_EXACT_STR: typing.Final[str] = (
 SELECT
     {', '.join(TruthBullet.model_fields)}
 FROM
-    uinewtruthbullets
+    thiatruthbullets
 WHERE
     channel_id = $1
     AND (
@@ -257,9 +466,19 @@ WHERE
 )
 
 
-class FastResponse(Response):
-    async def json(self, **kwargs: typing.Any) -> typing.Any:
-        return orjson.loads(await self.original.aread(), **kwargs)
+with contextlib.suppress(ImportError):
+    import orjson  # type: ignore
+
+    class FastResponse(Response):
+        async def json(self, **kwargs: typing.Any) -> typing.Any:
+            return orjson.loads(await self.original.aread(), **kwargs)
+
+    Response.json = FastResponse.json  # type: ignore
 
 
-Response.json = FastResponse.json  # type: ignore
+Names.model_rebuild()
+BulletConfig.model_rebuild()
+GachaItem.model_rebuild()
+GachaConfig.model_rebuild()
+GachaPlayer.model_rebuild()
+ItemToPlayer.model_rebuild()

@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,11 +25,11 @@ Playerlist Bot. If not, see <https://www.gnu.org/licenses/>.
 
 import importlib
 import os
-import typing
 
 import aiohttp
 import attrs
 import interactions as ipy
+import typing_extensions as typing
 
 import common.utils as utils
 
@@ -47,8 +47,8 @@ class VoteHandler:
 class Voting(ipy.Extension):
     session: aiohttp.ClientSession
 
-    def __init__(self, bot: utils.UIBase) -> None:
-        self.bot: utils.UIBase = bot
+    def __init__(self, bot: utils.THIABase) -> None:
+        self.bot: utils.THIABase = bot
         self.name = "Voting"
 
         self.shard_count = 1
@@ -70,19 +70,20 @@ class Voting(ipy.Extension):
                 )
             )
 
-        if os.environ.get("DBL_TOKEN"):
-            self.handlers.append(
-                VoteHandler(
-                    name="Discord Bot List",
-                    base_url="https://discordbotlist.com/api/v1",
-                    headers={"Authorization": os.environ["DBL_TOKEN"]},
-                    data_url="/bots/{bot_id}/stats",
-                    data_callback=lambda guild_count: {"guilds": guild_count},
-                    vote_url=(
-                        "https://discordbotlist.com/bots/ultimate-investigator/upvote"
-                    ),
-                )
-            )
+        # TODO: how do renames work?
+        # if os.environ.get("DBL_TOKEN"):
+        #     self.handlers.append(
+        #         VoteHandler(
+        #             name="Discord Bot List",
+        #             base_url="https://discordbotlist.com/api/v1",
+        #             headers={"Authorization": os.environ["DBL_TOKEN"]},
+        #             data_url="/bots/{bot_id}/stats",
+        #             data_callback=lambda guild_count: {"guilds": guild_count},
+        #             vote_url=(
+        #                 "https://discordbotlist.com/bots/ultimate-investigator/upvote"
+        #             ),
+        #         )
+        #     )
 
         if not self.handlers:
             raise ValueError("No voting handlers were configured.")
@@ -120,7 +121,7 @@ class Voting(ipy.Extension):
         name="vote",
         description="Vote for the bot.",
     )
-    async def vote(self, ctx: utils.UIInteractionContext) -> None:
+    async def vote(self, ctx: utils.THIASlashContext) -> None:
         website_votes: list[str] = [
             f"**{handler.name}** - {handler.vote_url.format(bot_id=self.bot.user.id)}"
             for handler in self.handlers
@@ -136,6 +137,6 @@ class Voting(ipy.Extension):
         )
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     Voting(bot)

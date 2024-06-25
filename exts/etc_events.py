@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,26 +16,31 @@ import common.utils as utils
 
 
 class EtcEvents(ipy.Extension):
-    def __init__(self, bot: utils.UIBase) -> None:
-        self.bot: utils.UIBase = bot
+    def __init__(self, bot: utils.THIABase) -> None:
+        self.bot: utils.THIABase = bot
 
     @ipy.listen("guild_join")
     async def on_guild_join(self, event: ipy.events.GuildJoin) -> None:
         if not self.bot.is_ready:
             return
 
-        _ = await models.Config.get_or_none(
-            guild_id=int(event.guild_id)
-        ) or await models.Config.prisma().create(data={"guild_id": int(event.guild_id)})
+        await models.GuildConfig.get_or_create(event.guild_id)
 
     @ipy.listen("guild_left")
     async def on_guild_left(self, event: ipy.events.GuildLeft) -> None:
         if not self.bot.is_ready:
             return
 
-        await models.Config.prisma().delete(where={"guild_id": int(event.guild_id)})
+        await models.GuildConfig.prisma().delete(
+            where={"guild_id": int(event.guild_id)}
+        )
+
+        # doesn't get deleted by cascade
+        await models.GachaPlayer.prisma().delete_many(
+            where={"guild_user_id": {"startswith": f"{event.guild_id}-"}}
+        )
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     EtcEvents(bot)

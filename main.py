@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,11 +13,11 @@ import functools
 import logging
 import os
 import sys
-import typing
 from collections import defaultdict
 
 import interactions as ipy
 import sentry_sdk
+import typing_extensions as typing
 from interactions.ext import prefixed_commands as prefixed
 from prisma import Prisma
 
@@ -32,7 +32,7 @@ import common.utils as utils
 if typing.TYPE_CHECKING:
     import discord_typings
 
-logger = logging.getLogger("uibot")
+logger = logging.getLogger("pythiabot")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
@@ -49,7 +49,7 @@ def default_sentry_filter(
 ) -> typing.Optional[dict[str, typing.Any]]:
     if "log_record" in hint:
         record: logging.LogRecord = hint["log_record"]
-        if "interactions" in record.name or "uibot" in record.name:
+        if "interactions" in record.name or "pythiabot" in record.name:
             # there are some logging messages that are not worth sending to sentry
             if ": 403" in record.message:
                 return None
@@ -88,7 +88,7 @@ if utils.SENTRY_ENABLED:
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], before_send=default_sentry_filter)
 
 
-class UltimateInvestigator(utils.UIBase):
+class PYTHIA(utils.THIABase):
     @ipy.listen("ready")
     async def on_ready(self) -> None:
         utcnow = ipy.Timestamp.utcnow()
@@ -105,18 +105,18 @@ class UltimateInvestigator(utils.UIBase):
         self.init_load = False
 
         activity = ipy.Activity(
-            name="Splash Text",
+            name="Status",
             type=ipy.ActivityType.CUSTOM,
-            state="Watching for Truth Bullets!",
+            state="Ultimate Investigator is now PYTHIA! Check bio for info",
         )
         await self.change_presence(activity=activity)
 
     @ipy.listen("resume")
     async def on_resume_func(self) -> None:
         activity = ipy.Activity(
-            name="Splash Text",
+            name="Status",
             type=ipy.ActivityType.CUSTOM,
-            state="Watching for Truth Bullets!",
+            state="Ultimate Investigator is now PYTHIA! Check bio for info",
         )
         await self.change_presence(activity=activity)
 
@@ -162,17 +162,17 @@ class UltimateInvestigator(utils.UIBase):
         await super().stop()
 
 
-# honestly don't think i need the members stuff
 intents = ipy.Intents.new(
     guilds=True,
     guild_emojis_and_stickers=True,
     messages=True,
     reactions=True,
     message_content=True,
+    guild_members=True,
 )
 mentions = ipy.AllowedMentions.all()
 
-bot = UltimateInvestigator(
+bot = PYTHIA(
     activity=ipy.Activity(
         name="Status", type=ipy.ActivityType.CUSTOM, state="Loading..."
     ),
@@ -182,10 +182,14 @@ bot = UltimateInvestigator(
     disable_dm_commands=True,
     allowed_mentions=mentions,
     intents=intents,
-    interaction_context=utils.UIInteractionContext,
-    slash_context=utils.UISlashContext,
-    modal_context=utils.UIModalContext,
+    interaction_context=utils.THIAInteractionContext,
+    slash_context=utils.THIASlashContext,
+    modal_context=utils.THIAModalContext,
     auto_defer=ipy.AutoDefer(enabled=True, time_until_defer=0),
+    message_cache=ipy.utils.TTLCache(30, 50, 150),
+    channel_cache=ipy.utils.TTLCache(600, 50, 250),
+    scheduled_events_cache=ipy.utils.NullCache(),
+    voice_state_cache=ipy.utils.NullCache(),
     logger=logger,
 )
 bot.init_load = True
@@ -193,8 +197,8 @@ bot.slash_perms_cache = defaultdict(dict)
 bot.mini_commands_per_scope = {}
 bot.background_tasks = set()
 bot.msg_enabled_bullets_guilds = set()
-bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # #D92C43 or 14232643
-prefixed.setup(bot)
+bot.color = ipy.Color(int(os.environ["BOT_COLOR"]))  # #723fb0 or 7487408
+prefixed.setup(bot, prefixed_context=utils.THIAPrefixedContext)
 
 
 async def start() -> None:
@@ -206,7 +210,7 @@ async def start() -> None:
     await db.connect()
     bot.db = db
 
-    for model in await models.Config.prisma().find_many(
+    for model in await models.BulletConfig.prisma().find_many(
         where={
             "bullets_enabled": True,
             "investigation_type": {"not": models.InvestigationType.COMMAND_ONLY},
@@ -229,11 +233,17 @@ async def start() -> None:
 
 if __name__ == "__main__":
     loop_factory = None
+    uvloop = None
 
     with contextlib.suppress(ImportError):
         import uvloop  # type: ignore
 
         loop_factory = uvloop.new_event_loop
 
-    with asyncio.Runner(loop_factory=loop_factory) as runner:
-        runner.run(start())
+    if sys.version_info >= (3, 11):
+        with asyncio.Runner(loop_factory=loop_factory) as runner:
+            runner.run(start())
+    else:
+        if uvloop:
+            uvloop.install()
+        asyncio.run(start())

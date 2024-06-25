@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,20 +12,24 @@ import functools
 import logging
 import os
 import traceback
-import typing
 from pathlib import Path
 
 import aiohttp
 import interactions as ipy
 import sentry_sdk
 import tansy
+import typing_extensions as typing
 from interactions.ext import prefixed_commands as prefixed
+from prisma.types import PrismaGuildConfigInclude
+from typing_extensions import TypeVar
 
 import common.models as models
 
 SENTRY_ENABLED = bool(os.environ.get("SENTRY_DSN", False))  # type: ignore
 
 VOTING_ENABLED = bool(os.environ.get("TOP_GG_TOKEN") or os.environ.get("DBL_TOKEN"))
+
+BOT_COLOR = ipy.Color(int(os.environ["BOT_COLOR"]))
 
 logger = logging.getLogger("uibot")
 
@@ -51,14 +55,11 @@ def error_embed_generate(error_msg: str) -> ipy.Embed:
     )
 
 
-_bot_color = ipy.Color(int(os.environ["BOT_COLOR"]))
-
-
 def make_embed(description: str, *, title: str | None = None) -> ipy.Embed:
     return ipy.Embed(
         title=title,
         description=description,
-        color=_bot_color,
+        color=BOT_COLOR,
         timestamp=ipy.Timestamp.utcnow(),
     )
 
@@ -101,7 +102,7 @@ async def error_handle(
 
 
 async def msg_to_owner(
-    bot: "UIBase",
+    bot: "THIABase",
     chunks: list[str] | list[ipy.Embed] | list[str | ipy.Embed] | str | ipy.Embed,
 ) -> None:
     if not isinstance(chunks, list):
@@ -255,7 +256,7 @@ if typing.TYPE_CHECKING:
 
     from .help_tools import MiniCommand, PermissionsResolver
 
-    class UIBase(PrefixedInjectedClient):
+    class THIABase(PrefixedInjectedClient):
         db: Prisma
         owner: ipy.User
         color: ipy.Color
@@ -270,12 +271,15 @@ if typing.TYPE_CHECKING:
 
 else:
 
-    class UIBase(ipy.Client):
+    class THIABase(ipy.Client):
         pass
 
 
-class UIContextMixin:
-    guild_config: typing.Optional[models.Config]
+ConfigT = TypeVar("ConfigT", bound=models.GuildConfigMixin, default=models.GuildConfig)
+
+
+class THIAContextMixin(typing.Generic[ConfigT]):
+    guild_config: typing.Optional[ConfigT]
     guild_id: ipy.Snowflake
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
@@ -287,48 +291,44 @@ class UIContextMixin:
         return self.client.cache.get_guild(self.guild_id)  # type: ignore
 
     @property
-    def bot(self) -> "UIBase":
+    def bot(self) -> "THIABase":
         """A reference to the bot instance."""
         return self.client  # type: ignore
 
-    async def fetch_config(self) -> models.Config:
+    async def fetch_config(
+        self,
+        include: PrismaGuildConfigInclude | None = None,
+        model: type[ConfigT] = models.GuildConfig,
+    ) -> ConfigT:
         """
         Gets the configuration for the context's guild.
 
         Returns:
-            GuildConfig: The guild config.
+            The guild config.
         """
         if self.guild_config:
             return self.guild_config
 
-        config = await models.Config.get_or_none(
-            guild_id=self.guild_id
-        ) or await models.Config.prisma().create(data={"guild_id": self.guild_id})
-
-        if not config.names:
-            config = await models.Config.prisma().update(
-                where={"guild_id": config.guild_id},
-                data={"names": {"create": {}}},
-                include={"names": True},
-            )
-            if typing.TYPE_CHECKING:
-                assert config is not None
-
+        config = await model.get_or_create(self.guild_id, include)
         self.guild_config = config
         return config
 
 
-class UIBaseContext(UIContextMixin, ipy.BaseContext):
+class THIABaseContext(THIAContextMixin[ConfigT], ipy.BaseContext):
     pass
 
 
-class UIModalContext(UIContextMixin, ipy.ModalContext):
+class THIAModalContext(THIAContextMixin[ConfigT], ipy.ModalContext):
     pass
 
 
-class UIInteractionContext(UIContextMixin, ipy.InteractionContext):
+class THIAInteractionContext(THIAContextMixin[ConfigT], ipy.InteractionContext):
     pass
 
 
-class UISlashContext(UIContextMixin, ipy.SlashContext):
+class THIASlashContext(THIAContextMixin[ConfigT], ipy.SlashContext):
+    pass
+
+
+class THIAPrefixedContext(THIAContextMixin[ConfigT], prefixed.PrefixedContext):
     pass

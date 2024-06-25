@@ -1,6 +1,6 @@
 """
 Copyright 2021-2024 AstreaTSS.
-This file is part of Ultimate Investigator.
+This file is part of PYTHIA.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,17 +35,26 @@ def convert_to_bool(argument: str) -> bool:
 class BulletCMDs(utils.Extension):
     """Commands for using and modifying Truth Bullets."""
 
-    def __init__(self, bot: utils.UIBase) -> None:
+    def __init__(self, bot: utils.THIABase) -> None:
         self.name = "Bullet"
-        self.bot: utils.UIBase = bot
+        self.bot: utils.THIABase = bot
 
-    @utils.manage_guild_slash_cmd(
-        name="add-bullets",
-        description="Open a prompt to add Truth Bullets to a specified channel.",
+    config = tansy.SlashCommand(
+        name="bullet-manage",
+        description="Handles management of Truth Bullets.",
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+        dm_permission=False,
+    )
+
+    @config.subcommand(
+        sub_cmd_name="add",
+        sub_cmd_description=(
+            "Open a prompt to add Truth Bullets to a specified channel."
+        ),
     )
     async def add_bullets(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel for the Truth Bullets to be added.",
             converter=utils.ValidChannelConverter,
@@ -73,7 +82,7 @@ class BulletCMDs(utils.Extension):
                     "This server has Truth Bullets that all have been found, likely"
                     " from a previous investigation. If you want to start fresh with"
                     " completely new Truth Bullets, you can clear the current ones"
-                    f" with {self.bot.mention_command('clear-bullets')}.",
+                    f" with {self.bot.mention_command('bullet-manage clear')}.",
                     color=ipy.RoleColors.YELLOW,
                 )
             )
@@ -170,13 +179,13 @@ class BulletCMDs(utils.Extension):
                 ),
             )
 
-    @utils.manage_guild_slash_cmd(
-        "remove-bullet",
-        description="Removes a Truth Bullet from the list of Truth Bullets.",
+    @config.subcommand(
+        "remove",
+        sub_cmd_description="Removes a Truth Bullet from the list of Truth Bullets.",
     )
     async def remove_bullet(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel for the Truth Bullet to be removed."
         ),
@@ -206,14 +215,14 @@ class BulletCMDs(utils.Extension):
                 f"Truth Bullet with trigger `{trigger}` does not exists!"
             )
 
-    @utils.manage_guild_slash_cmd(
-        "clear-bullets",
-        description=(
+    @config.subcommand(
+        "clear",
+        sub_cmd_description=(
             "Removes all Truth Bullets from the list of Truth Bullets. This action is"
             " irreversible."
         ),
     )
-    async def clear_bullets(self, ctx: utils.UISlashContext) -> None:
+    async def clear_bullets(self, ctx: utils.THIASlashContext) -> None:
         num_deleted = await models.TruthBullet.prisma().delete_many(
             where={"guild_id": ctx.guild_id}
         )
@@ -229,10 +238,11 @@ class BulletCMDs(utils.Extension):
                 "There's no Truth Bullets to delete for this server!"
             )
 
-    @utils.manage_guild_slash_cmd(
-        "list-bullets", "Lists all Truth Bullets in the server this is run in."
+    @config.subcommand(
+        "list",
+        sub_cmd_description="Lists all Truth Bullets in the server this is run in.",
     )
-    async def list_bullets(self, ctx: utils.UIInteractionContext) -> None:
+    async def list_bullets(self, ctx: utils.THIASlashContext) -> None:
         guild_bullets = await models.TruthBullet.prisma().find_many(
             where={"guild_id": ctx.guild_id}
         )
@@ -272,12 +282,12 @@ class BulletCMDs(utils.Extension):
         pag.default_color = ctx.bot.color
         await pag.send(ctx)
 
-    @utils.manage_guild_slash_cmd(
-        "bullet-info", "Lists all information about a Truth Bullet."
+    @config.subcommand(
+        "info", sub_cmd_description="Lists all information about a Truth Bullet."
     )
     async def bullet_info(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel the Truth Bullet is in."
         ),
@@ -304,13 +314,13 @@ class BulletCMDs(utils.Extension):
 
         await ctx.send(embeds=embed, allowed_mentions=utils.deny_mentions(ctx.author))
 
-    @utils.manage_guild_slash_cmd(
-        "edit-bullet", "Sends a prompt to edit a Truth Bullet."
+    @config.subcommand(
+        "edit", sub_cmd_description="Sends a prompt to edit a Truth Bullet."
     )
     @ipy.auto_defer(enabled=False)
     async def edit_bullet(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel the Truth Bullet is in."
         ),
@@ -409,10 +419,10 @@ class BulletCMDs(utils.Extension):
                     )
                 )
 
-    @utils.manage_guild_slash_cmd("unfind-bullet", "Un-finds a Truth Bullet.")
+    @config.subcommand("unfind", sub_cmd_description="Un-finds a Truth Bullet.")
     async def unfind_bullet(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel the Truth Bullet is in."
         ),
@@ -439,13 +449,15 @@ class BulletCMDs(utils.Extension):
 
         await ctx.send(embed=utils.make_embed("Truth Bullet un-found!"))
 
-    @utils.manage_guild_slash_cmd(
-        "override-bullet",
-        "Overrides who found a Truth Bullet with the person specified.",
+    @config.subcommand(
+        "override-finder",
+        sub_cmd_description=(
+            "Overrides who found a Truth Bullet with the person specified."
+        ),
     )
     async def override_bullet(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel the Truth Bullet is in."
         ),
@@ -468,12 +480,12 @@ class BulletCMDs(utils.Extension):
 
         await ctx.send(embed=utils.make_embed("Truth Bullet overrided and found!"))
 
-    @utils.manage_guild_slash_cmd(
-        "add-alias", "Adds an alias to the Truth Bullet specified."
+    @config.subcommand(
+        "add-alias", sub_cmd_description="Adds an alias to the Truth Bullet specified."
     )
     async def add_alias(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel the Truth Bullet is in."
         ),
@@ -535,12 +547,13 @@ class BulletCMDs(utils.Extension):
             )
         )
 
-    @utils.manage_guild_slash_cmd(
-        "remove-alias", "Removes an alias from the Truth Bullet specified."
+    @config.subcommand(
+        "remove-alias",
+        sub_cmd_description="Removes an alias from the Truth Bullet specified.",
     )
     async def remove_alias(
         self,
-        ctx: utils.UISlashContext,
+        ctx: utils.THIASlashContext,
         channel: ipy.GuildText | ipy.GuildPublicThread = tansy.Option(
             "The channel the Truth Bullet is in."
         ),
@@ -591,7 +604,7 @@ class BulletCMDs(utils.Extension):
         return await fuzzy.autocomplete_aliases(ctx, **ctx.kwargs)
 
 
-def setup(bot: utils.UIBase) -> None:
+def setup(bot: utils.THIABase) -> None:
     importlib.reload(utils)
     importlib.reload(fuzzy)
     BulletCMDs(bot)
