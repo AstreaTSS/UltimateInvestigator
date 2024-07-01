@@ -2,7 +2,7 @@ discord-py-interactions[speedup]==5.12.0
 tansy==0.9.1
 asyncpg==0.29.0
 prisma==0.13.1
-pydantic==2.7.3
+pydantic==2.8.0
 httpx[http2]==0.27.0
 aiodns==3.2.0
 Brotli==1.1.0
